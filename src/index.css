@@ -1,0 +1,77 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand: #1A5276;
+  --color-brand-mid: #2E86C1;
+  --color-brand-light: #D6EAF8;
+  --color-brand-dark: #0E3460;
+
+  --color-income: #1E8449;
+  --color-income-bg: #D5F5E3;
+
+  --color-expense: #C0392B;
+  --color-expense-bg: #FADBD8;
+
+  --color-pending: #B7770D;
+  --color-pending-bg: #FEF9E7;
+
+  --color-surface-page: #EAF0F6;
+  --color-surface-sidebar: #F4F6F8;
+  --color-surface-card: #FFFFFF;
+
+  --color-border: #D5D8DC;
+  --color-text-primary: #1A252F;
+  --color-text-secondary: #566573;
+  --color-text-hint: #99A3A4;
+}
+
+:root {
+  --brand:          #1A5276;
+  --brand-mid:      #2E86C1;
+  --brand-light:    #D6EAF8;
+  --income:         #1E8449;
+  --income-bg:      #D5F5E3;
+  --expense:        #C0392B;
+  --expense-bg:     #FADBD8;
+  --pending:        #B7770D;
+  --pending-bg:     #FEF9E7;
+  --page-bg:        #EAF0F6;
+  --sidebar-bg:     #F4F6F8;
+  --card-bg:        #FFFFFF;
+  --border:         #D5D8DC;
+  --text-primary:   #1A252F;
+  --text-secondary: #566573;
+  --text-hint:      #99A3A4;
+}
+
+[data-theme="dark"] {
+  --brand:          #2E86C1;
+  --brand-mid:      #5DADE2;
+  --brand-light:    #1A3A55;
+  --income:         #27AE60;
+  --income-bg:      #0B3D1F;
+  --expense:        #E74C3C;
+  --expense-bg:     #4A1208;
+  --pending:        #F0B429;
+  --pending-bg:     #3D2700;
+  --page-bg:        #17202A;
+  --sidebar-bg:     #1C2833;
+  --card-bg:        #212F3C;
+  --border:         #2C3E50;
+  --text-primary:   #ECF0F1;
+  --text-secondary: #ABB2B9;
+  --text-hint:      #566573;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Inter, system-ui, Helvetica, Arial, sans-serif;
+  background-color: var(--page-bg);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
