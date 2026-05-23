@@ -1,13 +1,16 @@
 import { useState } from 'react'
-import { ChevronDown, ChevronRight, Eye, PlusCircle, Search } from 'lucide-react'
+import { ChevronDown, ChevronRight, Download, Eye, PlusCircle, Search } from 'lucide-react'
 import { JournalEntry, EntryType } from '../../types/transaction.types'
 import { formatIDR } from '../../utils/currency'
 import { formatDate } from '../../utils/date'
+import { journalDb } from '../../lib/db'
+import { isElectron } from '../../lib/useDb'
 
 type Props = {
   entries: JournalEntry[]
   onNew: () => void
   onView: (entry: JournalEntry) => void
+  companyId?: string
 }
 
 const ENTRY_TYPE_LABEL: Record<EntryType, string> = {
@@ -57,9 +60,21 @@ function StatusBadge({ isPosted }: { isPosted: number }) {
   )
 }
 
-export function JournalList({ entries, onNew, onView }: Props) {
+export function JournalList({ entries, onNew, onView, companyId }: Props) {
   const [search, setSearch] = useState('')
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [loadedLines, setLoadedLines] = useState<Record<string, JournalEntry>>({})
+  const [exporting, setExporting] = useState(false)
+
+  async function handleExport() {
+    if (!isElectron || !companyId) return
+    setExporting(true)
+    try {
+      await journalDb.exportExcel(companyId, search ? { search } : undefined)
+    } finally {
+      setExporting(false)
+    }
+  }
 
   const filtered = entries.filter(e => {
     const q = search.toLowerCase()
@@ -70,8 +85,13 @@ export function JournalList({ entries, onNew, onView }: Props) {
     )
   })
 
-  function toggleExpand(id: string) {
-    setExpandedId(prev => (prev === id ? null : id))
+  async function toggleExpand(id: string) {
+    if (expandedId === id) { setExpandedId(null); return }
+    setExpandedId(id)
+    if (!loadedLines[id] && isElectron) {
+      const full = await journalDb.get(id)
+      if (full) setLoadedLines(prev => ({ ...prev, [id]: full }))
+    }
   }
 
   const thStyle: React.CSSProperties = {
@@ -105,26 +125,51 @@ export function JournalList({ entries, onNew, onView }: Props) {
             {entries.length} entri ditemukan
           </p>
         </div>
-        <button
-          type="button"
-          onClick={onNew}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-            padding: '8px 16px',
-            background: 'var(--brand)',
-            color: '#fff',
-            border: 'none',
-            borderRadius: 8,
-            fontSize: 13,
-            fontWeight: 600,
-            cursor: 'pointer',
-          }}
-        >
-          <PlusCircle size={15} />
-          Jurnal Baru
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {isElectron && companyId && (
+            <button
+              type="button"
+              onClick={handleExport}
+              disabled={exporting}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '8px 16px',
+                background: 'var(--card-bg)',
+                color: 'var(--text-secondary)',
+                border: '1px solid var(--border)',
+                borderRadius: 8,
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: exporting ? 'wait' : 'pointer',
+              }}
+            >
+              <Download size={15} />
+              {exporting ? 'Mengekspor…' : 'Ekspor Excel'}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={onNew}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '8px 16px',
+              background: 'var(--brand)',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 8,
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            <PlusCircle size={15} />
+            Jurnal Baru
+          </button>
+        </div>
       </div>
 
       <div
@@ -218,7 +263,7 @@ export function JournalList({ entries, onNew, onView }: Props) {
                     <td style={{ ...tdStyle, textAlign: 'center' }}>
                       <button
                         type="button"
-                        onClick={e => { e.stopPropagation(); onView(entry) }}
+                        onClick={e => { e.stopPropagation(); toggleExpand(entry.id); onView(entry) }}
                         title="Lihat detail"
                         style={{
                           display: 'inline-flex',
@@ -266,7 +311,7 @@ export function JournalList({ entries, onNew, onView }: Props) {
                               </tr>
                             </thead>
                             <tbody>
-                              {(entry.lines ?? []).map(line => (
+                              {((loadedLines[entry.id] ?? entry).lines ?? []).map(line => (
                                 <tr key={line.id}>
                                   <td style={{ padding: '6px 10px', fontSize: 12, color: 'var(--text-primary)' }}>
                                     <span style={{ fontFamily: 'monospace', color: 'var(--text-hint)', marginRight: 8 }}>

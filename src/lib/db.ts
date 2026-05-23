@@ -47,6 +47,8 @@ export const journalDb = {
             bridge().getLedger(companyId, accountId, from, to) as Promise<(JournalLine & {
               date: string; entry_number: string; entry_desc: string; reference?: string
             })[]>,
+  exportExcel: (companyId: string, filters?: JournalFilters) =>
+            bridge().exportJournal(companyId, filters) as Promise<{ ok: boolean; filePath?: string }>,
 }
 
 // ── Reports ────────────────────────────────────────────────────────────────
@@ -59,6 +61,8 @@ export type ReportHistoryRow = {
 export const reportDb = {
   listHistory:  (companyId: string)                       => bridge().listReportHistory(companyId) as Promise<ReportHistoryRow[]>,
   addHistory:   (row: ReportHistoryRow)                   => bridge().addReportHistory(row),
-  getPL:        (companyId: string, from: string, to: string) => bridge().getPL(companyId, from, to),
+  getPL:           (companyId: string, from: string, to: string) => bridge().getPL(companyId, from, to),
   getTrialBalance: (companyId: string, from: string, to: string) => bridge().getTrialBalance(companyId, from, to),
+  exportReport:    (companyId: string, reportType: string, periodLabel: string) =>
+                     bridge().exportReport(companyId, reportType, periodLabel) as Promise<{ ok: boolean; filePath?: string }>,
 }

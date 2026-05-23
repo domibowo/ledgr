@@ -6,6 +6,7 @@ import { formatIDR } from '../../utils/currency'
 import { JournalRow, FormLine } from './JournalRow'
 import { MOCK_ACCOUNTS } from './data/mockAccounts'
 import { accountDb } from '../../lib/db'
+import { MOCK_ACCOUNTS as SEED_ACCOUNTS } from './data/mockAccounts'
 import { isElectron } from '../../lib/useDb'
 import { useCompanyStore } from '../../store/company.store'
 
@@ -37,7 +38,14 @@ export function JournalForm({ onSave, onCancel, nextNumber }: Props) {
   useEffect(() => {
     if (isElectron && activeCompanyId) {
       accountDb.list(activeCompanyId).then(rows => {
-        if (rows.length > 0) setAccounts(rows)
+        if (rows.length > 0) {
+          setAccounts(rows)
+        } else {
+          const seeded = SEED_ACCOUNTS.map(a => ({ ...a, company_id: activeCompanyId }))
+          accountDb.bulkInsert(seeded).then(() =>
+            accountDb.list(activeCompanyId).then(setAccounts)
+          )
+        }
       })
     }
   }, [activeCompanyId])
@@ -74,7 +82,7 @@ export function JournalForm({ onSave, onCancel, nextNumber }: Props) {
     const entry: JournalEntry = {
       id: makeId(),
       company_id: 'c-1',
-      period_id: 'p-1',
+      period_id: null,
       entry_number: entryNumber,
       date,
       description: description.trim(),

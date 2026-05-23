@@ -36,6 +36,7 @@ electron.contextBridge.exposeInMainWorld("db", {
   deleteEntry: (id) => electron.ipcRenderer.invoke("journal:delete", id),
   bulkJournal: (entries, lines) => electron.ipcRenderer.invoke("journal:bulk-insert", entries, lines),
   getLedger: (companyId, accountId, from, to) => electron.ipcRenderer.invoke("journal:ledger", companyId, accountId, from, to),
+  exportJournal: (companyId, filters) => electron.ipcRenderer.invoke("journal:export-excel", companyId, filters),
   // Reports
   listReportHistory: (companyId) => electron.ipcRenderer.invoke("reports:history-list", companyId),
   addReportHistory: (row) => electron.ipcRenderer.invoke("reports:history-add", row),

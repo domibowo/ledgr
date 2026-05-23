@@ -42,6 +42,8 @@ interface Window {
     deleteEntry:       (id: string)                                              => Promise<{ ok: boolean }>
     bulkJournal:       (entries: unknown[], lines: unknown[])                    => Promise<{ ok: boolean; count: number }>
     getLedger:         (companyId: string, accountId: string, from?: string, to?: string) => Promise<unknown[]>
+    exportJournal:     (companyId: string, filters?: unknown)                    => Promise<{ ok: boolean; filePath?: string }>
+    exportReport:      (companyId: string, reportType: string, periodLabel: string) => Promise<{ ok: boolean; filePath?: string }>
     // Reports
     listReportHistory: (companyId: string)                                       => Promise<unknown[]>
     addReportHistory:  (row: unknown)                                            => Promise<{ ok: boolean }>

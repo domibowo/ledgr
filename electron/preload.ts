@@ -41,8 +41,12 @@ contextBridge.exposeInMainWorld('db', {
   bulkJournal:    (entries: unknown[], lines: unknown[])     => ipcRenderer.invoke('journal:bulk-insert', entries, lines),
   getLedger:      (companyId: string, accountId: string, from?: string, to?: string) =>
                     ipcRenderer.invoke('journal:ledger', companyId, accountId, from, to),
+  exportJournal:  (companyId: string, filters?: unknown) =>
+                    ipcRenderer.invoke('journal:export-excel', companyId, filters),
 
   // Reports
+  exportReport:   (companyId: string, reportType: string, periodLabel: string) =>
+                    ipcRenderer.invoke('reports:export', companyId, reportType, periodLabel),
   listReportHistory: (companyId: string)                     => ipcRenderer.invoke('reports:history-list', companyId),
   addReportHistory:  (row: unknown)                          => ipcRenderer.invoke('reports:history-add', row),
   getPL:             (companyId: string, from: string, to: string) => ipcRenderer.invoke('reports:pl', companyId, from, to),

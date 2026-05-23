@@ -51,19 +51,24 @@ export function JournalEntry() {
   }, [activeCompanyId])
 
   async function handleSave(entry: JournalEntry) {
-    if (isElectron && activeCompanyId) {
-      const entryRow = { ...entry, company_id: activeCompanyId }
-      const lines = (entry.lines ?? []).map(l => ({
-        id: l.id, entry_id: entry.id, account_id: l.account_id,
-        type: l.type, amount: l.amount, description: l.description ?? undefined, sort_order: l.sort_order,
-      }))
-      await journalDb.upsert(entryRow, lines)
-      const fresh = await journalDb.list(activeCompanyId)
-      setEntries(fresh)
-    } else {
-      setEntries(prev => [entry, ...prev])
+    try {
+      if (isElectron && activeCompanyId) {
+        const entryRow = { ...entry, company_id: activeCompanyId }
+        const lines = (entry.lines ?? []).map(l => ({
+          id: l.id, entry_id: entry.id, account_id: l.account_id,
+          type: l.type, amount: l.amount, description: l.description ?? undefined, sort_order: l.sort_order,
+        }))
+        await journalDb.upsert(entryRow, lines)
+        const fresh = await journalDb.list(activeCompanyId)
+        setEntries(fresh)
+      } else {
+        setEntries(prev => [entry, ...prev])
+      }
+      setView('list')
+    } catch (err) {
+      console.error('Failed to save journal entry:', err)
+      alert(`Gagal menyimpan entri jurnal: ${err instanceof Error ? err.message : String(err)}`)
     }
-    setView('list')
   }
 
   return (
@@ -78,6 +83,7 @@ export function JournalEntry() {
           entries={entries}
           onNew={() => setView('form')}
           onView={() => {}}
+          companyId={activeCompanyId ?? undefined}
         />
       ) : (
         <JournalForm

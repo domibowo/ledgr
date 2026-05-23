@@ -18,7 +18,7 @@ export interface JournalLine {
 export interface JournalEntry {
   id: string
   company_id: string
-  period_id: string
+  period_id: string | null
   entry_number: string
   date: string
   description: string

@@ -3,18 +3,25 @@ import { SummaryCards } from './components/SummaryCards'
 import { IncomeExpenseChart } from './components/IncomeExpenseChart'
 import { RecentTransactions } from './components/RecentTransactions'
 
-const RANGES = [
+export type DateRange = 'month' | 'quarter' | 'year'
+
+const RANGES: { label: string; value: DateRange }[] = [
   { label: 'Bulan Ini', value: 'month' },
   { label: 'Kuartal Ini', value: 'quarter' },
   { label: 'Tahun Ini', value: 'year' },
 ]
 
+const SUMMARY: Record<DateRange, { income: number; expense: number; pending: number; netProfit: number }> = {
+  month:   { income: 12400000,  expense: 4200000,  pending: 1800000,  netProfit: 8200000  },
+  quarter: { income: 38600000,  expense: 15100000, pending: 4200000,  netProfit: 23500000 },
+  year:    { income: 142000000, expense: 58300000, pending: 9700000,  netProfit: 83700000 },
+}
+
 export function Dashboard() {
-  const [range, setRange] = useState('month')
+  const [range, setRange] = useState<DateRange>('month')
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      {/* Page header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>Dashboard</h1>
@@ -22,7 +29,6 @@ export function Dashboard() {
             Ringkasan keuangan perusahaan Anda
           </p>
         </div>
-        {/* Range filter */}
         <div style={{
           display: 'flex', gap: 4, background: 'var(--card-bg)',
           border: '1px solid var(--border)', borderRadius: 8, padding: 4,
@@ -45,16 +51,10 @@ export function Dashboard() {
         </div>
       </div>
 
-      <SummaryCards
-        income={12400000}
-        expense={4200000}
-        pending={1800000}
-        netProfit={8200000}
-      />
+      <SummaryCards {...SUMMARY[range]} />
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-        <IncomeExpenseChart />
-        {/* Quick actions card */}
+        <IncomeExpenseChart range={range} />
         <div style={{
           background: 'var(--card-bg)', border: '1px solid var(--border)',
           borderRadius: 12, padding: '20px 24px',
@@ -87,7 +87,7 @@ export function Dashboard() {
         </div>
       </div>
 
-      <RecentTransactions />
+      <RecentTransactions range={range} />
     </div>
   )
 }

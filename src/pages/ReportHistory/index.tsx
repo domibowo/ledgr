@@ -32,6 +32,17 @@ function formatDateTime(iso: string) {
 export function ReportHistory() {
   const { activeCompanyId } = useCompanyStore()
   const [history, setHistory] = useState<ReportHistoryRow[]>([])
+  const [downloading, setDownloading] = useState<string | null>(null)
+
+  async function handleDownload(item: ReportHistoryRow) {
+    if (!isElectron || !activeCompanyId) return
+    setDownloading(item.id)
+    try {
+      await reportDb.exportReport(activeCompanyId, item.report_type, item.period_label)
+    } finally {
+      setDownloading(null)
+    }
+  }
 
   useEffect(() => {
     if (isElectron && activeCompanyId) {
@@ -125,11 +136,12 @@ export function ReportHistory() {
                     <td style={{ ...tdStyle, textAlign: 'center' }}>
                       <button
                         type="button"
-                        onClick={() => alert('Download akan tersedia setelah integrasi ExcelJS')}
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 10px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--card-bg)', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+                        onClick={() => handleDownload(item)}
+                        disabled={downloading === item.id}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 10px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--card-bg)', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 600, cursor: downloading === item.id ? 'wait' : 'pointer', opacity: downloading === item.id ? 0.6 : 1 }}
                       >
                         <Download size={12} />
-                        Unduh
+                        {downloading === item.id ? '…' : 'Unduh'}
                       </button>
                     </td>
                   </tr>
