@@ -4531,20 +4531,20 @@ function sheet_to_workbook(sheet, opts) {
 function sheet_add_aoa(_ws, data, opts) {
   var o = opts || {};
   var dense = _ws ? Array.isArray(_ws) : o.dense;
-  var ws = _ws || (dense ? [] : {});
+  var ws2 = _ws || (dense ? [] : {});
   var _R = 0, _C = 0;
-  if (ws && o.origin != null) {
+  if (ws2 && o.origin != null) {
     if (typeof o.origin == "number") _R = o.origin;
     else {
       var _origin = typeof o.origin == "string" ? decode_cell(o.origin) : o.origin;
       _R = _origin.r;
       _C = _origin.c;
     }
-    if (!ws["!ref"]) ws["!ref"] = "A1:A1";
+    if (!ws2["!ref"]) ws2["!ref"] = "A1:A1";
   }
   var range = { s: { c: 1e7, r: 1e7 }, e: { c: 0, r: 0 } };
-  if (ws["!ref"]) {
-    var _range = safe_decode_range(ws["!ref"]);
+  if (ws2["!ref"]) {
+    var _range = safe_decode_range(ws2["!ref"]);
     range.s.c = _range.s.c;
     range.s.r = _range.s.r;
     range.e.c = Math.max(range.e.c, _range.e.c);
@@ -4590,18 +4590,18 @@ function sheet_add_aoa(_ws, data, opts) {
         } else cell.t = "s";
       }
       if (dense) {
-        if (!ws[__R]) ws[__R] = [];
-        if (ws[__R][__C] && ws[__R][__C].z) cell.z = ws[__R][__C].z;
-        ws[__R][__C] = cell;
+        if (!ws2[__R]) ws2[__R] = [];
+        if (ws2[__R][__C] && ws2[__R][__C].z) cell.z = ws2[__R][__C].z;
+        ws2[__R][__C] = cell;
       } else {
         var cell_ref = encode_cell({ c: __C, r: __R });
-        if (ws[cell_ref] && ws[cell_ref].z) cell.z = ws[cell_ref].z;
-        ws[cell_ref] = cell;
+        if (ws2[cell_ref] && ws2[cell_ref].z) cell.z = ws2[cell_ref].z;
+        ws2[cell_ref] = cell;
       }
     }
   }
-  if (range.s.c < 1e7) ws["!ref"] = encode_range(range);
-  return ws;
+  if (range.s.c < 1e7) ws2["!ref"] = encode_range(range);
+  return ws2;
 }
 function aoa_to_sheet(data, opts) {
   return sheet_add_aoa(null, data, opts);
@@ -6692,15 +6692,15 @@ var DBF = /* @__PURE__ */ function() {
   function dbf_to_sheet(buf, opts) {
     var o = opts || {};
     if (!o.dateNF) o.dateNF = "yyyymmdd";
-    var ws = aoa_to_sheet(dbf_to_aoa(buf, o), o);
-    ws["!cols"] = o.DBF.map(function(field) {
+    var ws2 = aoa_to_sheet(dbf_to_aoa(buf, o), o);
+    ws2["!cols"] = o.DBF.map(function(field) {
       return {
         wch: field.len,
         DBF: field
       };
     });
     delete o.DBF;
-    return ws;
+    return ws2;
   }
   function dbf_to_workbook(buf, opts) {
     try {
@@ -6711,13 +6711,13 @@ var DBF = /* @__PURE__ */ function() {
     return { SheetNames: [], Sheets: {} };
   }
   var _RLEN = { "B": 8, "C": 250, "L": 1, "D": 8, "?": 0, "": 0 };
-  function sheet_to_dbf(ws, opts) {
+  function sheet_to_dbf(ws2, opts) {
     var o = opts || {};
     if (+o.codepage >= 0) set_cp(+o.codepage);
     if (o.type == "string") throw new Error("Cannot write DBF to JS string");
     var ba = buf_array();
-    var aoa = sheet_to_json(ws, { header: 1, raw: true, cellDates: true });
-    var headers = aoa[0], data = aoa.slice(1), cols = ws["!cols"] || [];
+    var aoa = sheet_to_json(ws2, { header: 1, raw: true, cellDates: true });
+    var headers = aoa[0], data = aoa.slice(1), cols = ws2["!cols"] || [];
     var i = 0, j = 0, hcnt = 0, rlen = 1;
     for (i = 0; i < headers.length; ++i) {
       if (((cols[i] || {}).DBF || {}).name) {
@@ -6737,7 +6737,7 @@ var DBF = /* @__PURE__ */ function() {
           }
       }
     }
-    var range = safe_decode_range(ws["!ref"]);
+    var range = safe_decode_range(ws2["!ref"]);
     var coltypes = [];
     var colwidths = [];
     var coldecimals = [];
@@ -7129,17 +7129,17 @@ var SYLK = /* @__PURE__ */ function() {
   }
   function sylk_to_sheet(d, opts) {
     var aoasht = sylk_to_aoa(d, opts);
-    var aoa = aoasht[0], ws = aoasht[1];
+    var aoa = aoasht[0], ws2 = aoasht[1];
     var o = aoa_to_sheet(aoa, opts);
-    keys(ws).forEach(function(k) {
-      o[k] = ws[k];
+    keys(ws2).forEach(function(k) {
+      o[k] = ws2[k];
     });
     return o;
   }
   function sylk_to_workbook(d, opts) {
     return sheet_to_workbook(sylk_to_sheet(d, opts), opts);
   }
-  function write_ws_cell_sylk(cell, ws, R, C) {
+  function write_ws_cell_sylk(cell, ws2, R, C) {
     var o = "C;Y" + (R + 1) + ";X" + (C + 1) + ";K";
     switch (cell.t) {
       case "n":
@@ -7182,22 +7182,22 @@ var SYLK = /* @__PURE__ */ function() {
       if (rec.length > 2) out.push(rec + "R" + (i + 1));
     });
   }
-  function sheet_to_sylk(ws, opts) {
+  function sheet_to_sylk(ws2, opts) {
     var preamble = ["ID;PWXL;N;E"], o = [];
-    var r = safe_decode_range(ws["!ref"]), cell;
-    var dense = Array.isArray(ws);
+    var r = safe_decode_range(ws2["!ref"]), cell;
+    var dense = Array.isArray(ws2);
     var RS = "\r\n";
     preamble.push("P;PGeneral");
     preamble.push("F;P0;DG0G8;M255");
-    if (ws["!cols"]) write_ws_cols_sylk(preamble, ws["!cols"]);
-    if (ws["!rows"]) write_ws_rows_sylk(preamble, ws["!rows"]);
+    if (ws2["!cols"]) write_ws_cols_sylk(preamble, ws2["!cols"]);
+    if (ws2["!rows"]) write_ws_rows_sylk(preamble, ws2["!rows"]);
     preamble.push("B;Y" + (r.e.r - r.s.r + 1) + ";X" + (r.e.c - r.s.c + 1) + ";D" + [r.s.c, r.s.r, r.e.c, r.e.r].join(" "));
     for (var R = r.s.r; R <= r.e.r; ++R) {
       for (var C = r.s.c; C <= r.e.c; ++C) {
         var coord = encode_cell({ r: R, c: C });
-        cell = dense ? (ws[R] || [])[C] : ws[coord];
+        cell = dense ? (ws2[R] || [])[C] : ws2[coord];
         if (!cell || cell.v == null && (!cell.f || cell.F)) continue;
-        o.push(write_ws_cell_sylk(cell, ws, R, C));
+        o.push(write_ws_cell_sylk(cell, ws2, R, C));
       }
     }
     return preamble.join(RS) + RS + o.join(RS) + RS + "E" + RS;
@@ -7281,10 +7281,10 @@ var DIF = /* @__PURE__ */ function() {
       o.push(type + "," + v);
       o.push(type == 1 ? '"' + s.replace(/"/g, '""') + '"' : s);
     };
-    return function sheet_to_dif2(ws) {
+    return function sheet_to_dif2(ws2) {
       var o = [];
-      var r = safe_decode_range(ws["!ref"]), cell;
-      var dense = Array.isArray(ws);
+      var r = safe_decode_range(ws2["!ref"]), cell;
+      var dense = Array.isArray(ws2);
       push_field(o, "TABLE", 0, 1, "sheetjs");
       push_field(o, "VECTORS", 0, r.e.r - r.s.r + 1, "");
       push_field(o, "TUPLES", 0, r.e.c - r.s.c + 1, "");
@@ -7293,7 +7293,7 @@ var DIF = /* @__PURE__ */ function() {
         push_value(o, -1, 0, "BOT");
         for (var C = r.s.c; C <= r.e.c; ++C) {
           var coord = encode_cell({ r: R, c: C });
-          cell = dense ? (ws[R] || [])[C] : ws[coord];
+          cell = dense ? (ws2[R] || [])[C] : ws2[coord];
           if (!cell) {
             push_value(o, 1, 0, "");
             continue;
@@ -7396,15 +7396,15 @@ var ETH = /* @__PURE__ */ function() {
     "part:sheet"
   ].join("\n");
   var end = "--SocialCalcSpreadsheetControlSave--";
-  function sheet_to_eth_data(ws) {
-    if (!ws || !ws["!ref"]) return "";
+  function sheet_to_eth_data(ws2) {
+    if (!ws2 || !ws2["!ref"]) return "";
     var o = [], oo = [], cell, coord = "";
-    var r = decode_range(ws["!ref"]);
-    var dense = Array.isArray(ws);
+    var r = decode_range(ws2["!ref"]);
+    var dense = Array.isArray(ws2);
     for (var R = r.s.r; R <= r.e.r; ++R) {
       for (var C = r.s.c; C <= r.e.c; ++C) {
         coord = encode_cell({ r: R, c: C });
-        cell = dense ? (ws[R] || [])[C] : ws[coord];
+        cell = dense ? (ws2[R] || [])[C] : ws2[coord];
         if (!cell || cell.v == null || cell.t === "z") continue;
         oo = ["cell", coord, "t"];
         switch (cell.t) {
@@ -7446,8 +7446,8 @@ var ETH = /* @__PURE__ */ function() {
     o.push("valueformat:1:text-wiki");
     return o.join("\n");
   }
-  function sheet_to_eth(ws) {
-    return [header, sep, meta, sep, sheet_to_eth_data(ws), end].join("\n");
+  function sheet_to_eth(ws2) {
+    return [header, sep, meta, sep, sheet_to_eth_data(ws2), end].join("\n");
   }
   return {
     to_workbook: eth_to_workbook,
@@ -7534,7 +7534,7 @@ var PRN = /* @__PURE__ */ function() {
   function dsv_to_sheet_str(str, opts) {
     var o = opts || {};
     var sep = "";
-    var ws = o.dense ? [] : {};
+    var ws2 = o.dense ? [] : {};
     var range = { s: { c: 0, r: 0 }, e: { c: 0, r: 0 } };
     if (str.slice(0, 4) == "sep=") {
       if (str.charCodeAt(5) == 13 && str.charCodeAt(6) == 10) {
@@ -7604,9 +7604,9 @@ var PRN = /* @__PURE__ */ function() {
       }
       if (cell.t == "z") ;
       else if (o.dense) {
-        if (!ws[R]) ws[R] = [];
-        ws[R][C] = cell;
-      } else ws[encode_cell({ c: C, r: R })] = cell;
+        if (!ws2[R]) ws2[R] = [];
+        ws2[R][C] = cell;
+      } else ws2[encode_cell({ c: C, r: R })] = cell;
       start = end + 1;
       startcc = str.charCodeAt(start);
       if (range.e.c < C) range.e.c = C;
@@ -7629,8 +7629,8 @@ var PRN = /* @__PURE__ */ function() {
         break;
     }
     if (end - start > 0) finish_cell();
-    ws["!ref"] = encode_range(range);
-    return ws;
+    ws2["!ref"] = encode_range(range);
+    return ws2;
   }
   function prn_to_sheet_str(str, opts) {
     if (!(opts && opts.PRN)) return dsv_to_sheet_str(str, opts);
@@ -7671,15 +7671,15 @@ var PRN = /* @__PURE__ */ function() {
   function prn_to_workbook(d, opts) {
     return sheet_to_workbook(prn_to_sheet(d, opts), opts);
   }
-  function sheet_to_prn(ws) {
+  function sheet_to_prn(ws2) {
     var o = [];
-    var r = safe_decode_range(ws["!ref"]), cell;
-    var dense = Array.isArray(ws);
+    var r = safe_decode_range(ws2["!ref"]), cell;
+    var dense = Array.isArray(ws2);
     for (var R = r.s.r; R <= r.e.r; ++R) {
       var oo = [];
       for (var C = r.s.c; C <= r.e.c; ++C) {
         var coord = encode_cell({ r: R, c: C });
-        cell = dense ? (ws[R] || [])[C] : ws[coord];
+        cell = dense ? (ws2[R] || [])[C] : ws2[coord];
         if (!cell || cell.v == null) {
           oo.push("          ");
           continue;
@@ -7854,13 +7854,13 @@ var WK_ = /* @__PURE__ */ function() {
     }
     return { SheetNames: rnames, Sheets: osheets };
   }
-  function sheet_to_wk1(ws, opts) {
+  function sheet_to_wk1(ws2, opts) {
     var o = opts || {};
     if (+o.codepage >= 0) set_cp(+o.codepage);
     if (o.type == "string") throw new Error("Cannot write WK1 to JS string");
     var ba = buf_array();
-    var range = safe_decode_range(ws["!ref"]);
-    var dense = Array.isArray(ws);
+    var range = safe_decode_range(ws2["!ref"]);
+    var dense = Array.isArray(ws2);
     var cols = [];
     write_biff_rec(ba, 0, write_BOF_WK1(1030));
     write_biff_rec(ba, 6, write_RANGE(range));
@@ -7870,7 +7870,7 @@ var WK_ = /* @__PURE__ */ function() {
       for (var C = range.s.c; C <= range.e.c; ++C) {
         if (R === range.s.r) cols[C] = encode_col(C);
         var ref = cols[C] + rr;
-        var cell = dense ? (ws[R] || [])[C] : ws[ref];
+        var cell = dense ? (ws2[R] || [])[C] : ws2[ref];
         if (!cell || cell.t == "z") continue;
         if (cell.t == "n") {
           if ((cell.v | 0) == cell.v && cell.v >= -32768 && cell.v <= 32767) write_biff_rec(ba, 13, write_INTEGER(R, C, cell.v));
@@ -7893,10 +7893,10 @@ var WK_ = /* @__PURE__ */ function() {
     for (var i = 0, cnt = 0; i < wb.SheetNames.length; ++i) if ((wb.Sheets[wb.SheetNames[i]] || {})["!ref"]) write_biff_rec(ba, 27, write_XFORMAT_SHEETNAME(wb.SheetNames[i], cnt++));
     var wsidx = 0;
     for (i = 0; i < wb.SheetNames.length; ++i) {
-      var ws = wb.Sheets[wb.SheetNames[i]];
-      if (!ws || !ws["!ref"]) continue;
-      var range = safe_decode_range(ws["!ref"]);
-      var dense = Array.isArray(ws);
+      var ws2 = wb.Sheets[wb.SheetNames[i]];
+      if (!ws2 || !ws2["!ref"]) continue;
+      var range = safe_decode_range(ws2["!ref"]);
+      var dense = Array.isArray(ws2);
       var cols = [];
       var max_R = Math.min(range.e.r, 8191);
       for (var R = range.s.r; R <= max_R; ++R) {
@@ -7904,7 +7904,7 @@ var WK_ = /* @__PURE__ */ function() {
         for (var C = range.s.c; C <= range.e.c; ++C) {
           if (R === range.s.r) cols[C] = encode_col(C);
           var ref = cols[C] + rr;
-          var cell = dense ? (ws[R] || [])[C] : ws[ref];
+          var cell = dense ? (ws2[R] || [])[C] : ws2[ref];
           if (!cell || cell.t == "z") continue;
           if (cell.t == "n") {
             write_biff_rec(ba, 23, write_NUMBER_17(R, C, wsidx, cell.v));
@@ -7932,10 +7932,10 @@ var WK_ = /* @__PURE__ */ function() {
     var rows = 0, cols = 0, wscnt = 0;
     for (var i = 0; i < wb.SheetNames.length; ++i) {
       var name = wb.SheetNames[i];
-      var ws = wb.Sheets[name];
-      if (!ws || !ws["!ref"]) continue;
+      var ws2 = wb.Sheets[name];
+      if (!ws2 || !ws2["!ref"]) continue;
       ++wscnt;
-      var range = decode_range(ws["!ref"]);
+      var range = decode_range(ws2["!ref"]);
       if (rows < range.e.r) rows = range.e.r;
       if (cols < range.e.c) cols = range.e.c;
     }
@@ -8855,12 +8855,12 @@ var RTF = /* @__PURE__ */ function() {
   }
   function rtf_to_sheet_str(str, opts) {
     var o = opts || {};
-    var ws = o.dense ? [] : {};
+    var ws2 = o.dense ? [] : {};
     var rows = str.match(/\\trowd.*?\\row\b/g);
     if (!rows.length) throw new Error("RTF missing table");
     var range = { s: { c: 0, r: 0 }, e: { c: 0, r: rows.length - 1 } };
     rows.forEach(function(rowtf, R) {
-      if (Array.isArray(ws)) ws[R] = [];
+      if (Array.isArray(ws2)) ws2[R] = [];
       var rtfre = /\\\w+\b/g;
       var last_index = 0;
       var res;
@@ -8873,8 +8873,8 @@ var RTF = /* @__PURE__ */ function() {
             ++C;
             if (data.length) {
               var cell = { v: data, t: "s" };
-              if (Array.isArray(ws)) ws[R][C] = cell;
-              else ws[encode_cell({ r: R, c: C })] = cell;
+              if (Array.isArray(ws2)) ws2[R][C] = cell;
+              else ws2[encode_cell({ r: R, c: C })] = cell;
             }
             break;
         }
@@ -8882,23 +8882,23 @@ var RTF = /* @__PURE__ */ function() {
       }
       if (C > range.e.c) range.e.c = C;
     });
-    ws["!ref"] = encode_range(range);
-    return ws;
+    ws2["!ref"] = encode_range(range);
+    return ws2;
   }
   function rtf_to_workbook(d, opts) {
     return sheet_to_workbook(rtf_to_sheet(d, opts), opts);
   }
-  function sheet_to_rtf(ws) {
+  function sheet_to_rtf(ws2) {
     var o = ["{\\rtf1\\ansi"];
-    var r = safe_decode_range(ws["!ref"]), cell;
-    var dense = Array.isArray(ws);
+    var r = safe_decode_range(ws2["!ref"]), cell;
+    var dense = Array.isArray(ws2);
     for (var R = r.s.r; R <= r.e.r; ++R) {
       o.push("\\trowd\\trautofit1");
       for (var C = r.s.c; C <= r.e.c; ++C) o.push("\\cellx" + (C + 1));
       o.push("\\pard\\intbl");
       for (C = r.s.c; C <= r.e.c; ++C) {
         var coord = encode_cell({ r: R, c: C });
-        cell = dense ? (ws[R] || [])[C] : ws[coord];
+        cell = dense ? (ws2[R] || [])[C] : ws2[coord];
         if (!cell || cell.v == null && (!cell.f || cell.F)) continue;
         o.push(" " + (cell.w || (format_cell(cell), cell.w)));
         o.push("\\cell");
@@ -12221,10 +12221,10 @@ function get_cell_style(styles, cell, opts) {
   };
   return len;
 }
-function check_ws(ws, sname, i) {
-  if (ws && ws["!ref"]) {
-    var range = safe_decode_range(ws["!ref"]);
-    if (range.e.c < range.s.c || range.e.r < range.s.r) throw new Error("Bad range (" + i + "): " + ws["!ref"]);
+function check_ws(ws2, sname, i) {
+  if (ws2 && ws2["!ref"]) {
+    var range = safe_decode_range(ws2["!ref"]);
+    if (range.e.c < range.s.c || range.e.r < range.s.r) throw new Error("Bad range (" + i + "): " + ws2["!ref"]);
   }
 }
 function write_ws_xml_merges(merges) {
@@ -12233,7 +12233,7 @@ function write_ws_xml_merges(merges) {
   for (var i = 0; i != merges.length; ++i) o += '<mergeCell ref="' + encode_range(merges[i]) + '"/>';
   return o + "</mergeCells>";
 }
-function write_ws_xml_sheetpr(ws, wb, idx, opts, o) {
+function write_ws_xml_sheetpr(ws2, wb, idx, opts, o) {
   var needed = false;
   var props = {}, payload = null;
   if (opts.bookType !== "xlsx" && wb.vbaraw) {
@@ -12245,10 +12245,10 @@ function write_ws_xml_sheetpr(ws, wb, idx, opts, o) {
     needed = true;
     props.codeName = utf8write(escapexml(cname));
   }
-  if (ws && ws["!outline"]) {
+  if (ws2 && ws2["!outline"]) {
     var outlineprops = { summaryBelow: 1, summaryRight: 1 };
-    if (ws["!outline"].above) outlineprops.summaryBelow = 0;
-    if (ws["!outline"].left) outlineprops.summaryRight = 0;
+    if (ws2["!outline"].above) outlineprops.summaryBelow = 0;
+    if (ws2["!outline"].left) outlineprops.summaryRight = 0;
     payload = (payload || "") + writextag("outlinePr", null, outlineprops);
   }
   if (!needed && !payload) return;
@@ -12283,7 +12283,7 @@ function write_ws_xml_margins(margin) {
   default_margins(margin);
   return writextag("pageMargins", null, margin);
 }
-function write_ws_xml_cols(ws, cols) {
+function write_ws_xml_cols(ws2, cols) {
   var o = ["<cols>"], col;
   for (var i = 0; i != cols.length; ++i) {
     if (!(col = cols[i])) continue;
@@ -12292,14 +12292,14 @@ function write_ws_xml_cols(ws, cols) {
   o[o.length] = "</cols>";
   return o.join("");
 }
-function write_ws_xml_autofilter(data, ws, wb, idx) {
+function write_ws_xml_autofilter(data, ws2, wb, idx) {
   var ref = typeof data.ref == "string" ? data.ref : encode_range(data.ref);
   if (!wb.Workbook) wb.Workbook = { Sheets: [] };
   if (!wb.Workbook.Names) wb.Workbook.Names = [];
   var names = wb.Workbook.Names;
   var range = decode_range(ref);
   if (range.s.r == range.e.r) {
-    range.e.r = decode_range(ws["!ref"]).e.r;
+    range.e.r = decode_range(ws2["!ref"]).e.r;
     ref = encode_range(range);
   }
   for (var i = 0; i < names.length; ++i) {
@@ -12312,13 +12312,13 @@ function write_ws_xml_autofilter(data, ws, wb, idx) {
   if (i == names.length) names.push({ Name: "_xlnm._FilterDatabase", Sheet: idx, Ref: "'" + wb.SheetNames[idx] + "'!" + ref });
   return writextag("autoFilter", null, { ref });
 }
-function write_ws_xml_sheetviews(ws, opts, idx, wb) {
+function write_ws_xml_sheetviews(ws2, opts, idx, wb) {
   var sview = { workbookViewId: "0" };
   if ((((wb || {}).Workbook || {}).Views || [])[0]) sview.rightToLeft = wb.Workbook.Views[0].RTL ? "1" : "0";
   return writextag("sheetViews", writextag("sheetView", null, sview), {});
 }
-function write_ws_xml_cell(cell, ref, ws, opts) {
-  if (cell.c) ws["!comments"].push([ref, cell.c]);
+function write_ws_xml_cell(cell, ref, ws2, opts) {
+  if (cell.c) ws2["!comments"].push([ref, cell.c]);
   if (cell.v === void 0 && typeof cell.f !== "string" || cell.t === "z" && !cell.f) return "";
   var vv = "";
   var oldt = cell.t, oldv = cell.v;
@@ -12384,13 +12384,13 @@ function write_ws_xml_cell(cell, ref, ws, opts) {
     var ff = cell.F && cell.F.slice(0, ref.length) == ref ? { t: "array", ref: cell.F } : null;
     v = writextag("f", escapexml(cell.f), ff) + (cell.v != null ? v : "");
   }
-  if (cell.l) ws["!links"].push([ref, cell.l]);
+  if (cell.l) ws2["!links"].push([ref, cell.l]);
   if (cell.D) o.cm = 1;
   return writextag("c", v, o);
 }
-function write_ws_xml_data(ws, opts, idx, wb) {
-  var o = [], r = [], range = safe_decode_range(ws["!ref"]), cell = "", ref, rr = "", cols = [], R = 0, C = 0, rows = ws["!rows"];
-  var dense = Array.isArray(ws);
+function write_ws_xml_data(ws2, opts, idx, wb) {
+  var o = [], r = [], range = safe_decode_range(ws2["!ref"]), cell = "", ref, rr = "", cols = [], R = 0, C = 0, rows = ws2["!rows"];
+  var dense = Array.isArray(ws2);
   var params = { r: rr }, row, height = -1;
   for (C = range.s.c; C <= range.e.c; ++C) cols[C] = encode_col(C);
   for (R = range.s.r; R <= range.e.r; ++R) {
@@ -12398,9 +12398,9 @@ function write_ws_xml_data(ws, opts, idx, wb) {
     rr = encode_row(R);
     for (C = range.s.c; C <= range.e.c; ++C) {
       ref = cols[C] + rr;
-      var _cell = dense ? (ws[R] || [])[C] : ws[ref];
+      var _cell = dense ? (ws2[R] || [])[C] : ws2[ref];
       if (_cell === void 0) continue;
-      if ((cell = write_ws_xml_cell(_cell, ref, ws, opts)) != null) r.push(cell);
+      if ((cell = write_ws_xml_cell(_cell, ref, ws2, opts)) != null) r.push(cell);
     }
     if (r.length > 0 || rows && rows[R]) {
       params = { r: rr };
@@ -12447,9 +12447,9 @@ function write_ws_xml(idx, opts, wb, rels) {
     "xmlns:r": XMLNS.r
   })];
   var s = wb.SheetNames[idx], sidx = 0, rdata = "";
-  var ws = wb.Sheets[s];
-  if (ws == null) ws = {};
-  var ref = ws["!ref"] || "A1";
+  var ws2 = wb.Sheets[s];
+  if (ws2 == null) ws2 = {};
+  var ref = ws2["!ref"] || "A1";
   var range = safe_decode_range(ref);
   if (range.e.c > 16383 || range.e.r > 1048575) {
     if (opts.WTF) throw new Error("Range " + ref + " exceeds format limit A1:XFD1048576");
@@ -12458,37 +12458,37 @@ function write_ws_xml(idx, opts, wb, rels) {
     ref = encode_range(range);
   }
   if (!rels) rels = {};
-  ws["!comments"] = [];
+  ws2["!comments"] = [];
   var _drawing = [];
-  write_ws_xml_sheetpr(ws, wb, idx, opts, o);
+  write_ws_xml_sheetpr(ws2, wb, idx, opts, o);
   o[o.length] = writextag("dimension", null, { "ref": ref });
-  o[o.length] = write_ws_xml_sheetviews(ws, opts, idx, wb);
+  o[o.length] = write_ws_xml_sheetviews(ws2, opts, idx, wb);
   if (opts.sheetFormat) o[o.length] = writextag("sheetFormatPr", null, {
     defaultRowHeight: opts.sheetFormat.defaultRowHeight || "16",
     baseColWidth: opts.sheetFormat.baseColWidth || "10",
     outlineLevelRow: opts.sheetFormat.outlineLevelRow || "7"
   });
-  if (ws["!cols"] != null && ws["!cols"].length > 0) o[o.length] = write_ws_xml_cols(ws, ws["!cols"]);
+  if (ws2["!cols"] != null && ws2["!cols"].length > 0) o[o.length] = write_ws_xml_cols(ws2, ws2["!cols"]);
   o[sidx = o.length] = "<sheetData/>";
-  ws["!links"] = [];
-  if (ws["!ref"] != null) {
-    rdata = write_ws_xml_data(ws, opts);
+  ws2["!links"] = [];
+  if (ws2["!ref"] != null) {
+    rdata = write_ws_xml_data(ws2, opts);
     if (rdata.length > 0) o[o.length] = rdata;
   }
   if (o.length > sidx + 1) {
     o[o.length] = "</sheetData>";
     o[sidx] = o[sidx].replace("/>", ">");
   }
-  if (ws["!protect"]) o[o.length] = write_ws_xml_protection(ws["!protect"]);
-  if (ws["!autofilter"] != null) o[o.length] = write_ws_xml_autofilter(ws["!autofilter"], ws, wb, idx);
-  if (ws["!merges"] != null && ws["!merges"].length > 0) o[o.length] = write_ws_xml_merges(ws["!merges"]);
+  if (ws2["!protect"]) o[o.length] = write_ws_xml_protection(ws2["!protect"]);
+  if (ws2["!autofilter"] != null) o[o.length] = write_ws_xml_autofilter(ws2["!autofilter"], ws2, wb, idx);
+  if (ws2["!merges"] != null && ws2["!merges"].length > 0) o[o.length] = write_ws_xml_merges(ws2["!merges"]);
   var relc = -1, rel, rId = -1;
   if (
     /*::(*/
-    ws["!links"].length > 0
+    ws2["!links"].length > 0
   ) {
     o[o.length] = "<hyperlinks>";
-    ws["!links"].forEach(function(l) {
+    ws2["!links"].forEach(function(l) {
       if (!l[1].Target) return;
       rel = { "ref": l[0] };
       if (l[1].Target.charAt(0) != "#") {
@@ -12501,18 +12501,18 @@ function write_ws_xml(idx, opts, wb, rels) {
     });
     o[o.length] = "</hyperlinks>";
   }
-  delete ws["!links"];
-  if (ws["!margins"] != null) o[o.length] = write_ws_xml_margins(ws["!margins"]);
+  delete ws2["!links"];
+  if (ws2["!margins"] != null) o[o.length] = write_ws_xml_margins(ws2["!margins"]);
   if (!opts || opts.ignoreEC || opts.ignoreEC == void 0) o[o.length] = writetag("ignoredErrors", writextag("ignoredError", null, { numberStoredAsText: 1, sqref: ref }));
   if (_drawing.length > 0) {
     rId = add_rels(rels, -1, "../drawings/drawing" + (idx + 1) + ".xml", RELS.DRAW);
     o[o.length] = writextag("drawing", null, { "r:id": "rId" + rId });
-    ws["!drawing"] = _drawing;
+    ws2["!drawing"] = _drawing;
   }
-  if (ws["!comments"].length > 0) {
+  if (ws2["!comments"].length > 0) {
     rId = add_rels(rels, -1, "../drawings/vmlDrawing" + (idx + 1) + ".vml", RELS.VML);
     o[o.length] = writextag("legacyDrawing", null, { "r:id": "rId" + rId });
-    ws["!legacy"] = rId;
+    ws2["!legacy"] = rId;
   }
   if (o.length > 1) {
     o[o.length] = "</worksheet>";
@@ -12534,9 +12534,9 @@ function parse_BrtRowHdr(data, length) {
   if (flags & 32) z.hpt = miyRw / 20;
   return z;
 }
-function write_BrtRowHdr(R, range, ws) {
+function write_BrtRowHdr(R, range, ws2) {
   var o = new_buf(17 + 8 * 16);
-  var row = (ws["!rows"] || [])[R] || {};
+  var row = (ws2["!rows"] || [])[R] || {};
   o.write_shift(4, R);
   o.write_shift(4, 0);
   var miyRw = 320;
@@ -12558,7 +12558,7 @@ function write_BrtRowHdr(R, range, ws) {
     var first = -1, last = -1;
     for (var j = i << 10; j < i + 1 << 10; ++j) {
       caddr.c = j;
-      var cell = Array.isArray(ws) ? (ws[caddr.r] || [])[caddr.c] : ws[encode_cell(caddr)];
+      var cell = Array.isArray(ws2) ? (ws2[caddr.r] || [])[caddr.c] : ws2[encode_cell(caddr)];
       if (cell) {
         if (first < 0) first = j;
         last = j;
@@ -12575,9 +12575,9 @@ function write_BrtRowHdr(R, range, ws) {
   o.l = l;
   return o.length > o.l ? o.slice(0, o.l) : o;
 }
-function write_row_header(ba, ws, range, R) {
-  var o = write_BrtRowHdr(R, range, ws);
-  if (o.length > 17 || (ws["!rows"] || [])[R]) write_record(ba, 0, o);
+function write_row_header(ba, ws2, range, R) {
+  var o = write_BrtRowHdr(R, range, ws2);
+  if (o.length > 17 || (ws2["!rows"] || [])[R]) write_record(ba, 0, o);
 }
 var parse_BrtWsDim = parse_UncheckedRfX;
 var write_BrtWsDim = write_UncheckedRfX;
@@ -12909,7 +12909,7 @@ function parse_BrtBeginWsView(data) {
   data.l += 28;
   return { RTL: f & 32 };
 }
-function write_BrtBeginWsView(ws, Workbook, o) {
+function write_BrtBeginWsView(ws2, Workbook, o) {
   if (o == null) o = new_buf(30);
   var f = 924;
   if ((((Workbook || {}).Views || [])[0] || {}).RTL) f |= 32;
@@ -12979,7 +12979,7 @@ function parse_BrtDVal() {
 }
 function parse_BrtDVal14() {
 }
-function write_ws_bin_cell(ba, cell, R, C, opts, ws, last_seen) {
+function write_ws_bin_cell(ba, cell, R, C, opts, ws2, last_seen) {
   if (cell.v === void 0) return false;
   var vv = "";
   switch (cell.t) {
@@ -13002,8 +13002,8 @@ function write_ws_bin_cell(ba, cell, R, C, opts, ws, last_seen) {
   }
   var o = { r: R, c: C };
   o.s = get_cell_style(opts.cellXfs, cell, opts);
-  if (cell.l) ws["!links"].push([encode_cell(o), cell.l]);
-  if (cell.c) ws["!comments"].push([encode_cell(o), cell.c]);
+  if (cell.l) ws2["!links"].push([encode_cell(o), cell.l]);
+  if (cell.c) ws2["!comments"].push([encode_cell(o), cell.c]);
   switch (cell.t) {
     case "s":
     case "str":
@@ -13043,29 +13043,29 @@ function write_ws_bin_cell(ba, cell, R, C, opts, ws, last_seen) {
   else write_record(ba, 1, write_BrtCellBlank(cell, o));
   return true;
 }
-function write_CELLTABLE(ba, ws, idx, opts) {
-  var range = safe_decode_range(ws["!ref"] || "A1"), ref, rr = "", cols = [];
+function write_CELLTABLE(ba, ws2, idx, opts) {
+  var range = safe_decode_range(ws2["!ref"] || "A1"), ref, rr = "", cols = [];
   write_record(
     ba,
     145
     /* BrtBeginSheetData */
   );
-  var dense = Array.isArray(ws);
+  var dense = Array.isArray(ws2);
   var cap = range.e.r;
-  if (ws["!rows"]) cap = Math.max(range.e.r, ws["!rows"].length - 1);
+  if (ws2["!rows"]) cap = Math.max(range.e.r, ws2["!rows"].length - 1);
   for (var R = range.s.r; R <= cap; ++R) {
     rr = encode_row(R);
-    write_row_header(ba, ws, range, R);
+    write_row_header(ba, ws2, range, R);
     var last_seen = false;
     if (R <= range.e.r) for (var C = range.s.c; C <= range.e.c; ++C) {
       if (R === range.s.r) cols[C] = encode_col(C);
       ref = cols[C] + rr;
-      var cell = dense ? (ws[R] || [])[C] : ws[ref];
+      var cell = dense ? (ws2[R] || [])[C] : ws2[ref];
       if (!cell) {
         last_seen = false;
         continue;
       }
-      last_seen = write_ws_bin_cell(ba, cell, R, C, opts, ws, last_seen);
+      last_seen = write_ws_bin_cell(ba, cell, R, C, opts, ws2, last_seen);
     }
   }
   write_record(
@@ -13074,10 +13074,10 @@ function write_CELLTABLE(ba, ws, idx, opts) {
     /* BrtEndSheetData */
   );
 }
-function write_MERGECELLS(ba, ws) {
-  if (!ws || !ws["!merges"]) return;
-  write_record(ba, 177, write_BrtBeginMergeCells(ws["!merges"].length));
-  ws["!merges"].forEach(function(m) {
+function write_MERGECELLS(ba, ws2) {
+  if (!ws2 || !ws2["!merges"]) return;
+  write_record(ba, 177, write_BrtBeginMergeCells(ws2["!merges"].length));
+  ws2["!merges"].forEach(function(m) {
     write_record(ba, 176, write_BrtMergeCell(m));
   });
   write_record(
@@ -13086,14 +13086,14 @@ function write_MERGECELLS(ba, ws) {
     /* BrtEndMergeCells */
   );
 }
-function write_COLINFOS(ba, ws) {
-  if (!ws || !ws["!cols"]) return;
+function write_COLINFOS(ba, ws2) {
+  if (!ws2 || !ws2["!cols"]) return;
   write_record(
     ba,
     390
     /* BrtBeginColInfos */
   );
-  ws["!cols"].forEach(function(m, i) {
+  ws2["!cols"].forEach(function(m, i) {
     if (m) write_record(ba, 60, write_BrtColInfo(i, m));
   });
   write_record(
@@ -13102,45 +13102,45 @@ function write_COLINFOS(ba, ws) {
     /* BrtEndColInfos */
   );
 }
-function write_IGNOREECS(ba, ws) {
-  if (!ws || !ws["!ref"]) return;
+function write_IGNOREECS(ba, ws2) {
+  if (!ws2 || !ws2["!ref"]) return;
   write_record(
     ba,
     648
     /* BrtBeginCellIgnoreECs */
   );
-  write_record(ba, 649, write_BrtCellIgnoreEC(safe_decode_range(ws["!ref"])));
+  write_record(ba, 649, write_BrtCellIgnoreEC(safe_decode_range(ws2["!ref"])));
   write_record(
     ba,
     650
     /* BrtEndCellIgnoreECs */
   );
 }
-function write_HLINKS(ba, ws, rels) {
-  ws["!links"].forEach(function(l) {
+function write_HLINKS(ba, ws2, rels) {
+  ws2["!links"].forEach(function(l) {
     if (!l[1].Target) return;
     var rId = add_rels(rels, -1, l[1].Target.replace(/#.*$/, ""), RELS.HLINK);
     write_record(ba, 494, write_BrtHLink(l, rId));
   });
-  delete ws["!links"];
+  delete ws2["!links"];
 }
-function write_LEGACYDRAWING(ba, ws, idx, rels) {
-  if (ws["!comments"].length > 0) {
+function write_LEGACYDRAWING(ba, ws2, idx, rels) {
+  if (ws2["!comments"].length > 0) {
     var rId = add_rels(rels, -1, "../drawings/vmlDrawing" + (idx + 1) + ".vml", RELS.VML);
     write_record(ba, 551, write_RelID("rId" + rId));
-    ws["!legacy"] = rId;
+    ws2["!legacy"] = rId;
   }
 }
-function write_AUTOFILTER(ba, ws, wb, idx) {
-  if (!ws["!autofilter"]) return;
-  var data = ws["!autofilter"];
+function write_AUTOFILTER(ba, ws2, wb, idx) {
+  if (!ws2["!autofilter"]) return;
+  var data = ws2["!autofilter"];
   var ref = typeof data.ref === "string" ? data.ref : encode_range(data.ref);
   if (!wb.Workbook) wb.Workbook = { Sheets: [] };
   if (!wb.Workbook.Names) wb.Workbook.Names = [];
   var names = wb.Workbook.Names;
   var range = decode_range(ref);
   if (range.s.r == range.e.r) {
-    range.e.r = decode_range(ws["!ref"]).e.r;
+    range.e.r = decode_range(ws2["!ref"]).e.r;
     ref = encode_range(range);
   }
   for (var i = 0; i < names.length; ++i) {
@@ -13158,14 +13158,14 @@ function write_AUTOFILTER(ba, ws, wb, idx) {
     /* BrtEndAFilter */
   );
 }
-function write_WSVIEWS2(ba, ws, Workbook) {
+function write_WSVIEWS2(ba, ws2, Workbook) {
   write_record(
     ba,
     133
     /* BrtBeginWsViews */
   );
   {
-    write_record(ba, 137, write_BrtBeginWsView(ws, Workbook));
+    write_record(ba, 137, write_BrtBeginWsView(ws2, Workbook));
     write_record(
       ba,
       138
@@ -13178,43 +13178,43 @@ function write_WSVIEWS2(ba, ws, Workbook) {
     /* BrtEndWsViews */
   );
 }
-function write_SHEETPROTECT(ba, ws) {
-  if (!ws["!protect"]) return;
-  write_record(ba, 535, write_BrtSheetProtection(ws["!protect"]));
+function write_SHEETPROTECT(ba, ws2) {
+  if (!ws2["!protect"]) return;
+  write_record(ba, 535, write_BrtSheetProtection(ws2["!protect"]));
 }
 function write_ws_bin(idx, opts, wb, rels) {
   var ba = buf_array();
-  var s = wb.SheetNames[idx], ws = wb.Sheets[s] || {};
+  var s = wb.SheetNames[idx], ws2 = wb.Sheets[s] || {};
   var c = s;
   try {
     if (wb && wb.Workbook) c = wb.Workbook.Sheets[idx].CodeName || c;
   } catch (e) {
   }
-  var r = safe_decode_range(ws["!ref"] || "A1");
+  var r = safe_decode_range(ws2["!ref"] || "A1");
   if (r.e.c > 16383 || r.e.r > 1048575) {
-    if (opts.WTF) throw new Error("Range " + (ws["!ref"] || "A1") + " exceeds format limit A1:XFD1048576");
+    if (opts.WTF) throw new Error("Range " + (ws2["!ref"] || "A1") + " exceeds format limit A1:XFD1048576");
     r.e.c = Math.min(r.e.c, 16383);
     r.e.r = Math.min(r.e.c, 1048575);
   }
-  ws["!links"] = [];
-  ws["!comments"] = [];
+  ws2["!links"] = [];
+  ws2["!comments"] = [];
   write_record(
     ba,
     129
     /* BrtBeginSheet */
   );
-  if (wb.vbaraw || ws["!outline"]) write_record(ba, 147, write_BrtWsProp(c, ws["!outline"]));
+  if (wb.vbaraw || ws2["!outline"]) write_record(ba, 147, write_BrtWsProp(c, ws2["!outline"]));
   write_record(ba, 148, write_BrtWsDim(r));
-  write_WSVIEWS2(ba, ws, wb.Workbook);
-  write_COLINFOS(ba, ws);
-  write_CELLTABLE(ba, ws, idx, opts);
-  write_SHEETPROTECT(ba, ws);
-  write_AUTOFILTER(ba, ws, wb, idx);
-  write_MERGECELLS(ba, ws);
-  write_HLINKS(ba, ws, rels);
-  if (ws["!margins"]) write_record(ba, 476, write_BrtMargins(ws["!margins"]));
-  if (!opts || opts.ignoreEC || opts.ignoreEC == void 0) write_IGNOREECS(ba, ws);
-  write_LEGACYDRAWING(ba, ws, idx, rels);
+  write_WSVIEWS2(ba, ws2, wb.Workbook);
+  write_COLINFOS(ba, ws2);
+  write_CELLTABLE(ba, ws2, idx, opts);
+  write_SHEETPROTECT(ba, ws2);
+  write_AUTOFILTER(ba, ws2, wb, idx);
+  write_MERGECELLS(ba, ws2);
+  write_HLINKS(ba, ws2, rels);
+  if (ws2["!margins"]) write_record(ba, 476, write_BrtMargins(ws2["!margins"]));
+  if (!opts || opts.ignoreEC || opts.ignoreEC == void 0) write_IGNOREECS(ba, ws2);
+  write_LEGACYDRAWING(ba, ws2, idx, rels);
   write_record(
     ba,
     130
@@ -13546,8 +13546,8 @@ function write_names_xlml(wb) {
   }
   return writextag("Names", out.join(""));
 }
-function write_ws_xlml_names(ws, opts, idx, wb) {
-  if (!ws) return "";
+function write_ws_xlml_names(ws2, opts, idx, wb) {
+  if (!ws2) return "";
   if (!((wb || {}).Workbook || {}).Names) return "";
   var names = wb.Workbook.Names;
   var out = [];
@@ -13559,18 +13559,18 @@ function write_ws_xlml_names(ws, opts, idx, wb) {
   }
   return out.join("");
 }
-function write_ws_xlml_wsopts(ws, opts, idx, wb) {
-  if (!ws) return "";
+function write_ws_xlml_wsopts(ws2, opts, idx, wb) {
+  if (!ws2) return "";
   var o = [];
-  if (ws["!margins"]) {
+  if (ws2["!margins"]) {
     o.push("<PageSetup>");
-    if (ws["!margins"].header) o.push(writextag("Header", null, { "x:Margin": ws["!margins"].header }));
-    if (ws["!margins"].footer) o.push(writextag("Footer", null, { "x:Margin": ws["!margins"].footer }));
+    if (ws2["!margins"].header) o.push(writextag("Header", null, { "x:Margin": ws2["!margins"].header }));
+    if (ws2["!margins"].footer) o.push(writextag("Footer", null, { "x:Margin": ws2["!margins"].footer }));
     o.push(writextag("PageMargins", null, {
-      "x:Bottom": ws["!margins"].bottom || "0.75",
-      "x:Left": ws["!margins"].left || "0.7",
-      "x:Right": ws["!margins"].right || "0.7",
-      "x:Top": ws["!margins"].top || "0.75"
+      "x:Bottom": ws2["!margins"].bottom || "0.75",
+      "x:Left": ws2["!margins"].left || "0.7",
+      "x:Right": ws2["!margins"].right || "0.7",
+      "x:Top": ws2["!margins"].top || "0.75"
     }));
     o.push("</PageSetup>");
   }
@@ -13582,12 +13582,12 @@ function write_ws_xlml_wsopts(ws, opts, idx, wb) {
     }
   }
   if (((((wb || {}).Workbook || {}).Views || [])[0] || {}).RTL) o.push("<DisplayRightToLeft/>");
-  if (ws["!protect"]) {
+  if (ws2["!protect"]) {
     o.push(writetag("ProtectContents", "True"));
-    if (ws["!protect"].objects) o.push(writetag("ProtectObjects", "True"));
-    if (ws["!protect"].scenarios) o.push(writetag("ProtectScenarios", "True"));
-    if (ws["!protect"].selectLockedCells != null && !ws["!protect"].selectLockedCells) o.push(writetag("EnableSelection", "NoSelection"));
-    else if (ws["!protect"].selectUnlockedCells != null && !ws["!protect"].selectUnlockedCells) o.push(writetag("EnableSelection", "UnlockedCells"));
+    if (ws2["!protect"].objects) o.push(writetag("ProtectObjects", "True"));
+    if (ws2["!protect"].scenarios) o.push(writetag("ProtectScenarios", "True"));
+    if (ws2["!protect"].selectLockedCells != null && !ws2["!protect"].selectLockedCells) o.push(writetag("EnableSelection", "NoSelection"));
+    else if (ws2["!protect"].selectUnlockedCells != null && !ws2["!protect"].selectUnlockedCells) o.push(writetag("EnableSelection", "UnlockedCells"));
     [
       ["formatCells", "AllowFormatCells"],
       ["formatColumns", "AllowSizeCols"],
@@ -13601,7 +13601,7 @@ function write_ws_xlml_wsopts(ws, opts, idx, wb) {
       ["autoFilter", "AllowFilter"],
       ["pivotTables", "AllowUsePivotTables"]
     ].forEach(function(x) {
-      if (ws["!protect"][x[0]]) o.push("<" + x[1] + "/>");
+      if (ws2["!protect"][x[0]]) o.push("<" + x[1] + "/>");
     });
   }
   if (o.length == 0) return "";
@@ -13614,7 +13614,7 @@ function write_ws_xlml_comment(comments) {
     return writextag("Comment", d, { "ss:Author": c.a });
   }).join("");
 }
-function write_ws_xlml_cell(cell, ref, ws, opts, idx, wb, addr) {
+function write_ws_xlml_cell(cell, ref, ws2, opts, idx, wb, addr) {
   if (!cell || cell.v == void 0 && cell.f == void 0) return "";
   var attr = {};
   if (cell.f) attr["ss:Formula"] = "=" + escapexml(a1_to_rc(cell.f, addr));
@@ -13626,8 +13626,8 @@ function write_ws_xlml_cell(cell, ref, ws, opts, idx, wb, addr) {
     attr["ss:HRef"] = escapexml(cell.l.Target);
     if (cell.l.Tooltip) attr["x:HRefScreenTip"] = escapexml(cell.l.Tooltip);
   }
-  if (ws["!merges"]) {
-    var marr = ws["!merges"];
+  if (ws2["!merges"]) {
+    var marr = ws2["!merges"];
     for (var mi = 0; mi != marr.length; ++mi) {
       if (marr[mi].s.c != addr.c || marr[mi].s.r != addr.r) continue;
       if (marr[mi].e.c > marr[mi].s.c) attr["ss:MergeAcross"] = marr[mi].e.c - marr[mi].s.c;
@@ -13678,12 +13678,12 @@ function write_ws_xlml_row(R, row) {
   }
   return o + ">";
 }
-function write_ws_xlml_table(ws, opts, idx, wb) {
-  if (!ws["!ref"]) return "";
-  var range = safe_decode_range(ws["!ref"]);
-  var marr = ws["!merges"] || [], mi = 0;
+function write_ws_xlml_table(ws2, opts, idx, wb) {
+  if (!ws2["!ref"]) return "";
+  var range = safe_decode_range(ws2["!ref"]);
+  var marr = ws2["!merges"] || [], mi = 0;
   var o = [];
-  if (ws["!cols"]) ws["!cols"].forEach(function(n, i) {
+  if (ws2["!cols"]) ws2["!cols"].forEach(function(n, i) {
     process_col(n);
     var w = !!n.width;
     var p = col_obj_w(i, n);
@@ -13692,9 +13692,9 @@ function write_ws_xlml_table(ws, opts, idx, wb) {
     if (n.hidden) k["ss:Hidden"] = "1";
     o.push(writextag("Column", null, k));
   });
-  var dense = Array.isArray(ws);
+  var dense = Array.isArray(ws2);
   for (var R = range.s.r; R <= range.e.r; ++R) {
-    var row = [write_ws_xlml_row(R, (ws["!rows"] || [])[R])];
+    var row = [write_ws_xlml_row(R, (ws2["!rows"] || [])[R])];
     for (var C = range.s.c; C <= range.e.c; ++C) {
       var skip = false;
       for (mi = 0; mi != marr.length; ++mi) {
@@ -13707,8 +13707,8 @@ function write_ws_xlml_table(ws, opts, idx, wb) {
       }
       if (skip) continue;
       var addr = { r: R, c: C };
-      var ref = encode_cell(addr), cell = dense ? (ws[R] || [])[C] : ws[ref];
-      row.push(write_ws_xlml_cell(cell, ref, ws, opts, idx, wb, addr));
+      var ref = encode_cell(addr), cell = dense ? (ws2[R] || [])[C] : ws2[ref];
+      row.push(write_ws_xlml_cell(cell, ref, ws2, opts, idx, wb, addr));
     }
     row.push("</Row>");
     if (row.length > 2) o.push(row.join(""));
@@ -13718,12 +13718,12 @@ function write_ws_xlml_table(ws, opts, idx, wb) {
 function write_ws_xlml(idx, opts, wb) {
   var o = [];
   var s = wb.SheetNames[idx];
-  var ws = wb.Sheets[s];
-  var t = ws ? write_ws_xlml_names(ws, opts, idx, wb) : "";
+  var ws2 = wb.Sheets[s];
+  var t = ws2 ? write_ws_xlml_names(ws2, opts, idx, wb) : "";
   if (t.length > 0) o.push("<Names>" + t + "</Names>");
-  t = ws ? write_ws_xlml_table(ws, opts, idx, wb) : "";
+  t = ws2 ? write_ws_xlml_table(ws2, opts, idx, wb) : "";
   if (t.length > 0) o.push("<Table>" + t + "</Table>");
-  o.push(write_ws_xlml_wsopts(ws, opts, idx, wb));
+  o.push(write_ws_xlml_wsopts(ws2, opts, idx, wb));
   return o.join("");
 }
 function write_xlml(wb, opts) {
@@ -17973,11 +17973,11 @@ function write_ws_biff2_cell(ba, cell, R, C) {
   }
   write_biff_rec(ba, 1, write_BIFF2Cell(null, R, C));
 }
-function write_ws_biff2(ba, ws, idx, opts) {
-  var dense = Array.isArray(ws);
-  var range = safe_decode_range(ws["!ref"] || "A1"), ref, rr = "", cols = [];
+function write_ws_biff2(ba, ws2, idx, opts) {
+  var dense = Array.isArray(ws2);
+  var range = safe_decode_range(ws2["!ref"] || "A1"), ref, rr = "", cols = [];
   if (range.e.c > 255 || range.e.r > 16383) {
-    if (opts.WTF) throw new Error("Range " + (ws["!ref"] || "A1") + " exceeds format limit A1:IV16384");
+    if (opts.WTF) throw new Error("Range " + (ws2["!ref"] || "A1") + " exceeds format limit A1:IV16384");
     range.e.c = Math.min(range.e.c, 255);
     range.e.r = Math.min(range.e.c, 16383);
     ref = encode_range(range);
@@ -17987,7 +17987,7 @@ function write_ws_biff2(ba, ws, idx, opts) {
     for (var C = range.s.c; C <= range.e.c; ++C) {
       if (R === range.s.r) cols[C] = encode_col(C);
       ref = cols[C] + rr;
-      var cell = dense ? (ws[R] || [])[C] : ws[ref];
+      var cell = dense ? (ws2[R] || [])[C] : ws2[ref];
       if (!cell) continue;
       write_ws_biff2_cell(ba, cell, R, C);
     }
@@ -18021,7 +18021,7 @@ function write_FMTS_biff8(ba, NF, opts) {
     for (var i = r[0]; i <= r[1]; ++i) if (NF[i] != null) write_biff_rec(ba, 1054, write_Format(i, NF[i], opts));
   });
 }
-function write_FEAT(ba, ws) {
+function write_FEAT(ba, ws2) {
   var o = new_buf(19);
   o.write_shift(4, 2151);
   o.write_shift(4, 0);
@@ -18040,7 +18040,7 @@ function write_FEAT(ba, ws) {
   o.write_shift(2, 1);
   o.write_shift(4, 4);
   o.write_shift(2, 0);
-  write_Ref8U(safe_decode_range(ws["!ref"] || "A1"), o);
+  write_Ref8U(safe_decode_range(ws2["!ref"] || "A1"), o);
   o.write_shift(4, 4);
   write_biff_rec(ba, 2152, o);
 }
@@ -18050,13 +18050,13 @@ function write_CELLXFS_biff8(ba, opts) {
     write_biff_rec(ba, 224, write_XF(c, 0, opts));
   });
 }
-function write_ws_biff8_hlinks(ba, ws) {
-  for (var R = 0; R < ws["!links"].length; ++R) {
-    var HL = ws["!links"][R];
+function write_ws_biff8_hlinks(ba, ws2) {
+  for (var R = 0; R < ws2["!links"].length; ++R) {
+    var HL = ws2["!links"][R];
     write_biff_rec(ba, 440, write_HLink(HL));
     if (HL[1].Tooltip) write_biff_rec(ba, 2048, write_HLinkTooltip(HL));
   }
-  delete ws["!links"];
+  delete ws2["!links"];
 }
 function write_ws_cols_biff8(ba, cols) {
   if (!cols) return;
@@ -18097,16 +18097,16 @@ function write_ws_biff8_cell(ba, cell, R, C, opts) {
 }
 function write_ws_biff8(idx, opts, wb) {
   var ba = buf_array();
-  var s = wb.SheetNames[idx], ws = wb.Sheets[s] || {};
+  var s = wb.SheetNames[idx], ws2 = wb.Sheets[s] || {};
   var _WB = (wb || {}).Workbook || {};
   var _sheet = (_WB.Sheets || [])[idx] || {};
-  var dense = Array.isArray(ws);
+  var dense = Array.isArray(ws2);
   var b8 = opts.biff == 8;
   var ref, rr = "", cols = [];
-  var range = safe_decode_range(ws["!ref"] || "A1");
+  var range = safe_decode_range(ws2["!ref"] || "A1");
   var MAX_ROWS = b8 ? 65536 : 16384;
   if (range.e.c > 255 || range.e.r >= MAX_ROWS) {
-    if (opts.WTF) throw new Error("Range " + (ws["!ref"] || "A1") + " exceeds format limit A1:IV16384");
+    if (opts.WTF) throw new Error("Range " + (ws2["!ref"] || "A1") + " exceeds format limit A1:IV16384");
     range.e.c = Math.min(range.e.c, 255);
     range.e.r = Math.min(range.e.c, MAX_ROWS - 1);
   }
@@ -18123,26 +18123,26 @@ function write_ws_biff8(idx, opts, wb) {
   write_biff_rec(ba, 128, write_Guts());
   write_biff_rec(ba, 131, writebool(false));
   write_biff_rec(ba, 132, writebool(false));
-  if (b8) write_ws_cols_biff8(ba, ws["!cols"]);
+  if (b8) write_ws_cols_biff8(ba, ws2["!cols"]);
   write_biff_rec(ba, 512, write_Dimensions(range, opts));
-  if (b8) ws["!links"] = [];
+  if (b8) ws2["!links"] = [];
   for (var R = range.s.r; R <= range.e.r; ++R) {
     rr = encode_row(R);
     for (var C = range.s.c; C <= range.e.c; ++C) {
       if (R === range.s.r) cols[C] = encode_col(C);
       ref = cols[C] + rr;
-      var cell = dense ? (ws[R] || [])[C] : ws[ref];
+      var cell = dense ? (ws2[R] || [])[C] : ws2[ref];
       if (!cell) continue;
       write_ws_biff8_cell(ba, cell, R, C, opts);
-      if (b8 && cell.l) ws["!links"].push([ref, cell.l]);
+      if (b8 && cell.l) ws2["!links"].push([ref, cell.l]);
     }
   }
   var cname = _sheet.CodeName || _sheet.name || s;
   if (b8) write_biff_rec(ba, 574, write_Window2((_WB.Views || [])[0]));
-  if (b8 && (ws["!merges"] || []).length) write_biff_rec(ba, 229, write_MergeCells(ws["!merges"]));
-  if (b8) write_ws_biff8_hlinks(ba, ws);
+  if (b8 && (ws2["!merges"] || []).length) write_biff_rec(ba, 229, write_MergeCells(ws2["!merges"]));
+  if (b8) write_ws_biff8_hlinks(ba, ws2);
   write_biff_rec(ba, 442, write_XLUnicodeString(cname));
-  if (b8) write_FEAT(ba, ws);
+  if (b8) write_FEAT(ba, ws2);
   write_biff_rec(
     ba,
     10
@@ -18273,9 +18273,9 @@ function write_biff8_buf(wb, opts) {
 }
 function write_biff_buf(wb, opts) {
   for (var i = 0; i <= wb.SheetNames.length; ++i) {
-    var ws = wb.Sheets[wb.SheetNames[i]];
-    if (!ws || !ws["!ref"]) continue;
-    var range = decode_range(ws["!ref"]);
+    var ws2 = wb.Sheets[wb.SheetNames[i]];
+    if (!ws2 || !ws2["!ref"]) continue;
+    var range = decode_range(ws2["!ref"]);
     if (range.e.c > 255) {
       if (typeof console != "undefined" && console.error) console.error("Worksheet '" + wb.SheetNames[i] + "' extends beyond column IV (255).  Data may be lost.");
     }
@@ -18292,8 +18292,8 @@ function write_biff_buf(wb, opts) {
   }
   throw new Error("invalid type " + o.bookType + " for BIFF");
 }
-function make_html_row(ws, r, R, o) {
-  var M = ws["!merges"] || [];
+function make_html_row(ws2, r, R, o) {
+  var M = ws2["!merges"] || [];
   var oo = [];
   for (var C = r.s.c; C <= r.e.c; ++C) {
     var RS = 0, CS = 0;
@@ -18310,7 +18310,7 @@ function make_html_row(ws, r, R, o) {
     }
     if (RS < 0) continue;
     var coord = encode_cell({ r: R, c: C });
-    var cell = o.dense ? (ws[R] || [])[C] : ws[coord];
+    var cell = o.dense ? (ws2[R] || [])[C] : ws2[coord];
     var w = cell && cell.v != null && (cell.h || escapehtml(cell.w || (format_cell(cell), cell.w) || "")) || "";
     var sp = {};
     if (RS > 1) sp.rowspan = RS;
@@ -18330,23 +18330,23 @@ function make_html_row(ws, r, R, o) {
 }
 var HTML_BEGIN = '<html><head><meta charset="utf-8"/><title>SheetJS Table Export</title></head><body>';
 var HTML_END = "</body></html>";
-function make_html_preamble(ws, R, o) {
+function make_html_preamble(ws2, R, o) {
   var out = [];
   return out.join("") + "<table" + (o && o.id ? ' id="' + o.id + '"' : "") + ">";
 }
-function sheet_to_html(ws, opts) {
+function sheet_to_html(ws2, opts) {
   var o = opts || {};
   var header = o.header != null ? o.header : HTML_BEGIN;
   var footer = o.footer != null ? o.footer : HTML_END;
   var out = [header];
-  var r = decode_range(ws["!ref"]);
-  o.dense = Array.isArray(ws);
-  out.push(make_html_preamble(ws, r, o));
-  for (var R = r.s.r; R <= r.e.r; ++R) out.push(make_html_row(ws, r, R, o));
+  var r = decode_range(ws2["!ref"]);
+  o.dense = Array.isArray(ws2);
+  out.push(make_html_preamble(ws2, r, o));
+  for (var R = r.s.r; R <= r.e.r; ++R) out.push(make_html_row(ws2, r, R, o));
   out.push("</table>" + footer);
   return out.join("");
 }
-function sheet_add_dom(ws, table, _opts) {
+function sheet_add_dom(ws2, table, _opts) {
   var opts = _opts || {};
   var or_R = 0, or_C = 0;
   if (opts.origin != null) {
@@ -18360,8 +18360,8 @@ function sheet_add_dom(ws, table, _opts) {
   var rows = table.getElementsByTagName("tr");
   var sheetRows = Math.min(opts.sheetRows || 1e7, rows.length);
   var range = { s: { r: 0, c: 0 }, e: { r: or_R, c: or_C } };
-  if (ws["!ref"]) {
-    var _range = decode_range(ws["!ref"]);
+  if (ws2["!ref"]) {
+    var _range = decode_range(ws2["!ref"]);
     range.s.r = Math.min(range.s.r, _range.s.r);
     range.s.c = Math.min(range.s.c, _range.s.c);
     range.e.r = Math.max(range.e.r, _range.e.r);
@@ -18369,9 +18369,9 @@ function sheet_add_dom(ws, table, _opts) {
     if (or_R == -1) range.e.r = or_R = _range.e.r + 1;
   }
   var merges = [], midx = 0;
-  var rowinfo = ws["!rows"] || (ws["!rows"] = []);
+  var rowinfo = ws2["!rows"] || (ws2["!rows"] = []);
   var _R = 0, R = 0, _C = 0, C = 0, RS = 0, CS = 0;
-  if (!ws["!cols"]) ws["!cols"] = [];
+  if (!ws2["!cols"]) ws2["!cols"] = [];
   for (; _R < rows.length && R < sheetRows; ++_R) {
     var row = rows[_R];
     if (is_dom_element_hidden(row)) {
@@ -18417,24 +18417,24 @@ function sheet_add_dom(ws, table, _opts) {
       }
       if (l && l.charAt(0) != "#") o.l = { Target: l };
       if (opts.dense) {
-        if (!ws[R + or_R]) ws[R + or_R] = [];
-        ws[R + or_R][C + or_C] = o;
-      } else ws[encode_cell({ c: C + or_C, r: R + or_R })] = o;
+        if (!ws2[R + or_R]) ws2[R + or_R] = [];
+        ws2[R + or_R][C + or_C] = o;
+      } else ws2[encode_cell({ c: C + or_C, r: R + or_R })] = o;
       if (range.e.c < C + or_C) range.e.c = C + or_C;
       C += CS;
     }
     ++R;
   }
-  if (merges.length) ws["!merges"] = (ws["!merges"] || []).concat(merges);
+  if (merges.length) ws2["!merges"] = (ws2["!merges"] || []).concat(merges);
   range.e.r = Math.max(range.e.r, R - 1 + or_R);
-  ws["!ref"] = encode_range(range);
-  if (R >= sheetRows) ws["!fullref"] = encode_range((range.e.r = rows.length - _R + R - 1 + or_R, range));
-  return ws;
+  ws2["!ref"] = encode_range(range);
+  if (R >= sheetRows) ws2["!fullref"] = encode_range((range.e.r = rows.length - _R + R - 1 + or_R, range));
+  return ws2;
 }
 function parse_dom_table(table, _opts) {
   var opts = _opts || {};
-  var ws = opts.dense ? [] : {};
-  return sheet_add_dom(ws, table, _opts);
+  var ws2 = opts.dense ? [] : {};
+  return sheet_add_dom(ws2, table, _opts);
 }
 function table_to_book(table, opts) {
   return sheet_to_workbook(parse_dom_table(table, opts), opts);
@@ -18488,16 +18488,16 @@ var write_content_ods = /* @__PURE__ */ function() {
   };
   var null_cell_xml = "          <table:table-cell />\n";
   var covered_cell_xml = "          <table:covered-table-cell/>\n";
-  var write_ws2 = function(ws, wb, i) {
+  var write_ws2 = function(ws2, wb, i) {
     var o = [];
     o.push('      <table:table table:name="' + escapexml(wb.SheetNames[i]) + '" table:style-name="ta1">\n');
-    var R = 0, C = 0, range = decode_range(ws["!ref"] || "A1");
-    var marr = ws["!merges"] || [], mi = 0;
-    var dense = Array.isArray(ws);
-    if (ws["!cols"]) {
-      for (C = 0; C <= range.e.c; ++C) o.push("        <table:table-column" + (ws["!cols"][C] ? ' table:style-name="co' + ws["!cols"][C].ods + '"' : "") + "></table:table-column>\n");
+    var R = 0, C = 0, range = decode_range(ws2["!ref"] || "A1");
+    var marr = ws2["!merges"] || [], mi = 0;
+    var dense = Array.isArray(ws2);
+    if (ws2["!cols"]) {
+      for (C = 0; C <= range.e.c; ++C) o.push("        <table:table-column" + (ws2["!cols"][C] ? ' table:style-name="co' + ws2["!cols"][C].ods + '"' : "") + "></table:table-column>\n");
     }
-    var H = "", ROWS = ws["!rows"] || [];
+    var H = "", ROWS = ws2["!rows"] || [];
     for (R = 0; R < range.s.r; ++R) {
       H = ROWS[R] ? ' table:style-name="ro' + ROWS[R].ods + '"' : "";
       o.push("        <table:table-row" + H + "></table:table-row>\n");
@@ -18522,7 +18522,7 @@ var write_content_ods = /* @__PURE__ */ function() {
           o.push(covered_cell_xml);
           continue;
         }
-        var ref = encode_cell({ r: R, c: C }), cell = dense ? (ws[R] || [])[C] : ws[ref];
+        var ref = encode_cell({ r: R, c: C }), cell = dense ? (ws2[R] || [])[C] : ws2[ref];
         if (cell && cell.f) {
           ct["table:formula"] = escapexml(csf_to_ods_formula(cell.f));
           if (cell.F) {
@@ -18589,15 +18589,15 @@ var write_content_ods = /* @__PURE__ */ function() {
     var cidx = 0;
     wb.SheetNames.map(function(n) {
       return wb.Sheets[n];
-    }).forEach(function(ws) {
-      if (!ws) return;
-      if (ws["!cols"]) {
-        for (var C = 0; C < ws["!cols"].length; ++C) if (ws["!cols"][C]) {
-          var colobj = ws["!cols"][C];
+    }).forEach(function(ws2) {
+      if (!ws2) return;
+      if (ws2["!cols"]) {
+        for (var C = 0; C < ws2["!cols"].length; ++C) if (ws2["!cols"][C]) {
+          var colobj = ws2["!cols"][C];
           if (colobj.width == null && colobj.wpx == null && colobj.wch == null) continue;
           process_col(colobj);
           colobj.ods = cidx;
-          var w = ws["!cols"][C].wpx + "px";
+          var w = ws2["!cols"][C].wpx + "px";
           o.push('  <style:style style:name="co' + cidx + '" style:family="table-column">\n');
           o.push('   <style:table-column-properties fo:break-before="auto" style:column-width="' + w + '"/>\n');
           o.push("  </style:style>\n");
@@ -18608,12 +18608,12 @@ var write_content_ods = /* @__PURE__ */ function() {
     var ridx = 0;
     wb.SheetNames.map(function(n) {
       return wb.Sheets[n];
-    }).forEach(function(ws) {
-      if (!ws) return;
-      if (ws["!rows"]) {
-        for (var R = 0; R < ws["!rows"].length; ++R) if (ws["!rows"][R]) {
-          ws["!rows"][R].ods = ridx;
-          var h = ws["!rows"][R].hpx + "px";
+    }).forEach(function(ws2) {
+      if (!ws2) return;
+      if (ws2["!rows"]) {
+        for (var R = 0; R < ws2["!rows"].length; ++R) if (ws2["!rows"][R]) {
+          ws2["!rows"][R].ods = ridx;
+          var h = ws2["!rows"][R].hpx + "px";
           o.push('  <style:style style:name="ro' + ridx + '" style:family="table-row">\n');
           o.push('   <style:table-row-properties fo:break-before="auto" style:row-height="' + h + '"/>\n');
           o.push("  </style:style>\n");
@@ -19188,10 +19188,10 @@ function write_tile_row(tri, data, SST) {
 function write_numbers_iwa(wb, opts) {
   if (!opts || !opts.numbers)
     throw new Error("Must pass a `numbers` option -- check the README");
-  var ws = wb.Sheets[wb.SheetNames[0]];
+  var ws2 = wb.Sheets[wb.SheetNames[0]];
   if (wb.SheetNames.length > 1)
     console.error("The Numbers writer currently writes only the first table");
-  var range = decode_range(ws["!ref"]);
+  var range = decode_range(ws2["!ref"]);
   range.s.r = range.s.c = 0;
   var trunc = false;
   if (range.e.c > 9) {
@@ -19204,7 +19204,7 @@ function write_numbers_iwa(wb, opts) {
   }
   if (trunc)
     console.error("The Numbers writer is currently limited to ".concat(encode_range(range)));
-  var data = sheet_to_json(ws, { range, header: 1 });
+  var data = sheet_to_json(ws2, { range, header: 1 });
   var SST = ["~Sh33tJ5~"];
   data.forEach(function(row) {
     return row.forEach(function(cell) {
@@ -19535,8 +19535,8 @@ function write_zip_xlsxb(wb, opts) {
   }
   for (rId = 1; rId <= wb.SheetNames.length; ++rId) {
     var wsrels = { "!id": {} };
-    var ws = wb.Sheets[wb.SheetNames[rId - 1]];
-    var _type = (ws || {})["!type"] || "sheet";
+    var ws2 = wb.Sheets[wb.SheetNames[rId - 1]];
+    var _type = (ws2 || {})["!type"] || "sheet";
     switch (_type) {
       case "chart":
       default:
@@ -19545,8 +19545,8 @@ function write_zip_xlsxb(wb, opts) {
         ct.sheets.push(f);
         add_rels(opts.wbrels, -1, "worksheets/sheet" + rId + "." + wbext, RELS.WS[0]);
     }
-    if (ws) {
-      var comments = ws["!comments"];
+    if (ws2) {
+      var comments = ws2["!comments"];
       var need_vml = false;
       var cf = "";
       if (comments && comments.length > 0) {
@@ -19556,11 +19556,11 @@ function write_zip_xlsxb(wb, opts) {
         add_rels(wsrels, -1, "../comments" + rId + "." + wbext, RELS.CMNT);
         need_vml = true;
       }
-      if (ws["!legacy"]) {
-        if (need_vml) zip_add_file(zip, "xl/drawings/vmlDrawing" + rId + ".vml", write_comments_vml(rId, ws["!comments"]));
+      if (ws2["!legacy"]) {
+        if (need_vml) zip_add_file(zip, "xl/drawings/vmlDrawing" + rId + ".vml", write_comments_vml(rId, ws2["!comments"]));
       }
-      delete ws["!comments"];
-      delete ws["!legacy"];
+      delete ws2["!comments"];
+      delete ws2["!legacy"];
     }
     if (wsrels["!id"].rId1) zip_add_file(zip, get_rels_path(f), write_rels(wsrels));
   }
@@ -19659,8 +19659,8 @@ function write_zip_xlsx(wb, opts) {
   opts.tcid = 0;
   for (rId = 1; rId <= wb.SheetNames.length; ++rId) {
     var wsrels = { "!id": {} };
-    var ws = wb.Sheets[wb.SheetNames[rId - 1]];
-    var _type = (ws || {})["!type"] || "sheet";
+    var ws2 = wb.Sheets[wb.SheetNames[rId - 1]];
+    var _type = (ws2 || {})["!type"] || "sheet";
     switch (_type) {
       case "chart":
       default:
@@ -19669,8 +19669,8 @@ function write_zip_xlsx(wb, opts) {
         ct.sheets.push(f);
         add_rels(opts.wbrels, -1, "worksheets/sheet" + rId + "." + wbext, RELS.WS[0]);
     }
-    if (ws) {
-      var comments = ws["!comments"];
+    if (ws2) {
+      var comments = ws2["!comments"];
       var need_vml = false;
       var cf = "";
       if (comments && comments.length > 0) {
@@ -19692,11 +19692,11 @@ function write_zip_xlsx(wb, opts) {
         add_rels(wsrels, -1, "../comments" + rId + "." + wbext, RELS.CMNT);
         need_vml = true;
       }
-      if (ws["!legacy"]) {
-        if (need_vml) zip_add_file(zip, "xl/drawings/vmlDrawing" + rId + ".vml", write_comments_vml(rId, ws["!comments"]));
+      if (ws2["!legacy"]) {
+        if (need_vml) zip_add_file(zip, "xl/drawings/vmlDrawing" + rId + ".vml", write_comments_vml(rId, ws2["!comments"]));
       }
-      delete ws["!comments"];
-      delete ws["!legacy"];
+      delete ws2["!comments"];
+      delete ws2["!legacy"];
     }
     if (wsrels["!id"].rId1) zip_add_file(zip, get_rels_path(f), write_rels(wsrels));
   }
@@ -20174,9 +20174,9 @@ function sheet_to_formulae(sheet) {
 function sheet_add_json(_ws, js, opts) {
   var o = opts || {};
   var offset = +!o.skipHeader;
-  var ws = _ws || {};
+  var ws2 = _ws || {};
   var _R = 0, _C = 0;
-  if (ws && o.origin != null) {
+  if (ws2 && o.origin != null) {
     if (typeof o.origin == "number") _R = o.origin;
     else {
       var _origin = typeof o.origin == "string" ? decode_cell(o.origin) : o.origin;
@@ -20186,8 +20186,8 @@ function sheet_add_json(_ws, js, opts) {
   }
   var cell;
   var range = { s: { c: 0, r: 0 }, e: { c: _C, r: _R + js.length - 1 + offset } };
-  if (ws["!ref"]) {
-    var _range = safe_decode_range(ws["!ref"]);
+  if (ws2["!ref"]) {
+    var _range = safe_decode_range(ws2["!ref"]);
     range.e.c = Math.max(range.e.c, _range.e.c);
     range.e.r = Math.max(range.e.r, _range.e.r);
     if (_R == -1) {
@@ -20208,9 +20208,9 @@ function sheet_add_json(_ws, js, opts) {
       var t = "z";
       var z = "";
       var ref = encode_cell({ c: _C + C, r: _R + R + offset });
-      cell = ws_get_cell_stub(ws, ref);
+      cell = ws_get_cell_stub(ws2, ref);
       if (v && typeof v === "object" && !(v instanceof Date)) {
-        ws[ref] = v;
+        ws2[ref] = v;
       } else {
         if (typeof v == "number") t = "n";
         else if (typeof v == "boolean") t = "b";
@@ -20226,7 +20226,7 @@ function sheet_add_json(_ws, js, opts) {
           t = "e";
           v = 0;
         }
-        if (!cell) ws[ref] = cell = { t, v };
+        if (!cell) ws2[ref] = cell = { t, v };
         else {
           cell.t = t;
           cell.v = v;
@@ -20240,24 +20240,24 @@ function sheet_add_json(_ws, js, opts) {
   });
   range.e.c = Math.max(range.e.c, _C + hdr.length - 1);
   var __R = encode_row(_R);
-  if (offset) for (C = 0; C < hdr.length; ++C) ws[encode_col(C + _C) + __R] = { t: "s", v: hdr[C] };
-  ws["!ref"] = encode_range(range);
-  return ws;
+  if (offset) for (C = 0; C < hdr.length; ++C) ws2[encode_col(C + _C) + __R] = { t: "s", v: hdr[C] };
+  ws2["!ref"] = encode_range(range);
+  return ws2;
 }
 function json_to_sheet(js, opts) {
   return sheet_add_json(null, js, opts);
 }
-function ws_get_cell_stub(ws, R, C) {
+function ws_get_cell_stub(ws2, R, C) {
   if (typeof R == "string") {
-    if (Array.isArray(ws)) {
+    if (Array.isArray(ws2)) {
       var RC = decode_cell(R);
-      if (!ws[RC.r]) ws[RC.r] = [];
-      return ws[RC.r][RC.c] || (ws[RC.r][RC.c] = { t: "z" });
+      if (!ws2[RC.r]) ws2[RC.r] = [];
+      return ws2[RC.r][RC.c] || (ws2[RC.r][RC.c] = { t: "z" });
     }
-    return ws[R] || (ws[R] = { t: "z" });
+    return ws2[R] || (ws2[R] = { t: "z" });
   }
-  if (typeof R != "number") return ws_get_cell_stub(ws, encode_cell(R));
-  return ws_get_cell_stub(ws, encode_cell({ r: R, c: C || 0 }));
+  if (typeof R != "number") return ws_get_cell_stub(ws2, encode_cell(R));
+  return ws_get_cell_stub(ws2, encode_cell({ r: R, c: C || 0 }));
 }
 function wb_sheet_idx(wb, sh) {
   if (typeof sh == "number") {
@@ -20272,7 +20272,7 @@ function wb_sheet_idx(wb, sh) {
 function book_new() {
   return { SheetNames: [], Sheets: {} };
 }
-function book_append_sheet(wb, ws, name, roll) {
+function book_append_sheet(wb, ws2, name, roll) {
   var i = 1;
   if (!name) {
     for (; i <= 65535; ++i, name = void 0) if (wb.SheetNames.indexOf(name = "Sheet" + i) == -1) break;
@@ -20287,7 +20287,7 @@ function book_append_sheet(wb, ws, name, roll) {
   check_ws_name(name);
   if (wb.SheetNames.indexOf(name) >= 0) throw new Error("Worksheet with name |" + name + "| already exists!");
   wb.SheetNames.push(name);
-  wb.Sheets[name] = ws;
+  wb.Sheets[name] = ws2;
   return name;
 }
 function book_set_sheet_visibility(wb, sh, vis) {
@@ -20325,11 +20325,11 @@ function cell_add_comment(cell, text, author) {
   if (!cell.c) cell.c = [];
   cell.c.push({ t: text, a: author || "SheetJS" });
 }
-function sheet_set_array_formula(ws, range, formula, dynamic) {
+function sheet_set_array_formula(ws2, range, formula, dynamic) {
   var rng = typeof range != "string" ? range : safe_decode_range(range);
   var rngstr = typeof range == "string" ? range : encode_range(range);
   for (var R = rng.s.r; R <= rng.e.r; ++R) for (var C = rng.s.c; C <= rng.e.c; ++C) {
-    var cell = ws_get_cell_stub(ws, R, C);
+    var cell = ws_get_cell_stub(ws2, R, C);
     cell.t = "n";
     cell.F = rngstr;
     delete cell.v;
@@ -20338,7 +20338,7 @@ function sheet_set_array_formula(ws, range, formula, dynamic) {
       if (dynamic) cell.D = true;
     }
   }
-  return ws;
+  return ws2;
 }
 var utils = {
   encode_col,
@@ -20563,6 +20563,392 @@ function registerJournalHandlers() {
     return { ok: true, filePath };
   });
 }
+function ws(rows, colWidths) {
+  const sheet = utils.aoa_to_sheet(rows);
+  sheet["!cols"] = colWidths.map((w) => ({ wch: w }));
+  return sheet;
+}
+function mergeRow(sheet, row, fromCol, toCol) {
+  if (!sheet["!merges"]) sheet["!merges"] = [];
+  sheet["!merges"].push({ s: { r: row, c: fromCol }, e: { r: row, c: toCol } });
+}
+function buildCalk(companyName, reportTitle, period) {
+  const rows = [
+    [companyName],
+    [`CATATAN ATAS LAPORAN KEUANGAN (CaLK)`],
+    [reportTitle],
+    [`Periode: ${period}`],
+    [null],
+    ["1. GAMBARAN UMUM PERUSAHAAN"],
+    [null],
+    ["   Perusahaan didirikan berdasarkan akta pendirian yang sah dan bergerak di bidang usaha"],
+    ["   sesuai dengan anggaran dasar perusahaan. Laporan keuangan ini disusun sesuai dengan"],
+    ["   Standar Akuntansi Keuangan (SAK) yang berlaku di Indonesia."],
+    [null],
+    ["2. IKHTISAR KEBIJAKAN AKUNTANSI SIGNIFIKAN"],
+    [null],
+    ["   a. Dasar Penyusunan Laporan Keuangan"],
+    ["      Laporan keuangan disusun berdasarkan konsep biaya historis (historical cost) dan"],
+    ["      menggunakan dasar akrual (accrual basis), kecuali untuk laporan arus kas yang"],
+    ["      menggunakan dasar kas (cash basis)."],
+    [null],
+    ["   b. Pengakuan Pendapatan"],
+    ["      Pendapatan diakui pada saat jasa telah diselesaikan atau barang telah diserahkan"],
+    ["      kepada pelanggan dan jumlahnya dapat diukur secara andal."],
+    [null],
+    ["   c. Pengakuan Beban"],
+    ["      Beban diakui pada saat terjadinya (accrual basis) dan dicocokkan dengan pendapatan"],
+    ["      yang dihasilkan pada periode yang sama."],
+    [null],
+    ["   d. Aset Tetap & Penyusutan"],
+    ["      Aset tetap dicatat berdasarkan biaya perolehan dikurangi akumulasi penyusutan."],
+    ["      Penyusutan dihitung menggunakan metode garis lurus (straight-line method)."],
+    [null],
+    ["   e. Piutang Usaha"],
+    ["      Piutang usaha diakui sebesar nilai nominal. Penyisihan piutang tak tertagih"],
+    ["      dibentuk berdasarkan analisis umur piutang dan estimasi manajemen."],
+    [null],
+    ["   f. Persediaan"],
+    ["      Persediaan dinilai berdasarkan harga perolehan atau nilai realisasi bersih, mana"],
+    ["      yang lebih rendah. Metode penilaian persediaan menggunakan FIFO (First In First Out)."],
+    [null],
+    ["3. PENJELASAN POS-POS LAPORAN KEUANGAN"],
+    [null],
+    ["   Penjelasan rinci mengenai pos-pos material dalam laporan keuangan disajikan sebagai"],
+    ["   bagian dari catatan ini. Manajemen bertanggung jawab atas penyusunan dan penyajian"],
+    ["   wajar laporan keuangan sesuai dengan SAK yang berlaku."],
+    [null],
+    ["4. PERISTIWA SETELAH TANGGAL NERACA"],
+    [null],
+    ["   Tidak ada peristiwa signifikan yang terjadi setelah tanggal neraca yang memerlukan"],
+    ["   penyesuaian atau pengungkapan dalam laporan keuangan ini."],
+    [null],
+    ["5. INFORMASI LAINNYA"],
+    [null],
+    ["   Laporan keuangan ini telah disetujui oleh manajemen untuk diterbitkan."],
+    ["   Tanggal penyusunan: " + (/* @__PURE__ */ new Date()).toLocaleDateString("id-ID", { day: "2-digit", month: "long", year: "numeric" })]
+  ];
+  const sheet = utils.aoa_to_sheet(rows);
+  sheet["!cols"] = [{ wch: 90 }];
+  mergeRow(sheet, 0, 0, 0);
+  mergeRow(sheet, 1, 0, 0);
+  return sheet;
+}
+function buildProfitLoss(companyName, period, data) {
+  const rows = [
+    [companyName, null, null],
+    ["LAPORAN LABA RUGI", null, null],
+    [`Periode: ${period}`, null, null],
+    ["(Dalam Rupiah)", null, null],
+    [null, null, null],
+    ["Uraian", "Catatan", "Jumlah (Rp)"],
+    [null, null, null],
+    ["PENDAPATAN", null, null]
+  ];
+  data.income.forEach((i) => {
+    rows.push([`  ${i.code} - ${i.name}`, null, i.amount]);
+  });
+  rows.push([null, null, null]);
+  rows.push(["TOTAL PENDAPATAN", null, data.totalIncome]);
+  rows.push([null, null, null]);
+  rows.push(["BEBAN USAHA", null, null]);
+  data.expenses.forEach((e) => {
+    rows.push([`  ${e.code} - ${e.name}`, null, e.amount]);
+  });
+  rows.push([null, null, null]);
+  rows.push(["TOTAL BEBAN USAHA", null, data.totalExpenses]);
+  rows.push([null, null, null]);
+  const grossProfit = data.totalIncome - data.totalExpenses;
+  rows.push(["LABA (RUGI) KOTOR", null, grossProfit]);
+  rows.push([null, null, null]);
+  rows.push(["Beban Lain-lain", null, null]);
+  rows.push(["  Beban Bunga & Keuangan", null, 0]);
+  rows.push(["  Pendapatan Bunga", null, 0]);
+  rows.push([null, null, null]);
+  rows.push(["LABA (RUGI) SEBELUM PAJAK", null, data.netIncome]);
+  rows.push(["  Pajak Penghasilan (25%)", null, data.netIncome > 0 ? Math.round(data.netIncome * 0.25) : 0]);
+  rows.push([null, null, null]);
+  rows.push(["LABA (RUGI) BERSIH", null, data.netIncome > 0 ? Math.round(data.netIncome * 0.75) : data.netIncome]);
+  const sheet = ws(rows, [48, 12, 22]);
+  for (let r = 0; r <= 3; r++) mergeRow(sheet, r, 0, 2);
+  const ref = sheet["!ref"];
+  const range = utils.decode_range(ref);
+  for (let r = range.s.r; r <= range.e.r; r++) {
+    const cell = sheet[utils.encode_cell({ r, c: 2 })];
+    if (cell && typeof cell.v === "number") cell.z = "#,##0";
+  }
+  return sheet;
+}
+function buildBalanceSheet(companyName, period, data) {
+  const rows = [
+    [companyName, null, null],
+    ["LAPORAN NERACA (POSISI KEUANGAN)", null, null],
+    [`Per Tanggal: ${period}`, null, null],
+    ["(Dalam Rupiah)", null, null],
+    [null, null, null],
+    ["ASET", null, null],
+    [null, null, null],
+    ["Aset Lancar", null, null]
+  ];
+  data.currentAssets.forEach((a) => rows.push([`  ${a.code} - ${a.name}`, null, a.amount]));
+  rows.push(["Jumlah Aset Lancar", null, data.totalCurrentAssets]);
+  rows.push([null, null, null]);
+  rows.push(["Aset Tidak Lancar", null, null]);
+  data.nonCurrentAssets.forEach((a) => rows.push([`  ${a.code} - ${a.name}`, null, a.amount]));
+  rows.push(["Jumlah Aset Tidak Lancar", null, data.totalNonCurrentAssets]);
+  rows.push([null, null, null]);
+  rows.push(["TOTAL ASET", null, data.totalAssets]);
+  rows.push([null, null, null]);
+  rows.push(["LIABILITAS DAN EKUITAS", null, null]);
+  rows.push([null, null, null]);
+  rows.push(["Liabilitas Jangka Pendek", null, null]);
+  data.currentLiabilities.forEach((l) => rows.push([`  ${l.code} - ${l.name}`, null, l.amount]));
+  rows.push(["Jumlah Liabilitas Jangka Pendek", null, data.totalCurrentLiabilities]);
+  rows.push([null, null, null]);
+  rows.push(["Liabilitas Jangka Panjang", null, null]);
+  data.nonCurrentLiabilities.forEach((l) => rows.push([`  ${l.code} - ${l.name}`, null, l.amount]));
+  rows.push(["Jumlah Liabilitas Jangka Panjang", null, data.totalNonCurrentLiabilities]);
+  rows.push([null, null, null]);
+  rows.push(["TOTAL LIABILITAS", null, data.totalLiabilities]);
+  rows.push([null, null, null]);
+  rows.push(["Ekuitas", null, null]);
+  data.equity.forEach((e) => rows.push([`  ${e.code ? e.code + " - " : ""}${e.name}`, null, e.amount]));
+  rows.push(["TOTAL EKUITAS", null, data.totalEquity]);
+  rows.push([null, null, null]);
+  rows.push(["TOTAL LIABILITAS DAN EKUITAS", null, data.totalLiabilitiesEquity]);
+  const sheet = ws(rows, [48, 12, 22]);
+  for (let r = 0; r <= 3; r++) mergeRow(sheet, r, 0, 2);
+  const range = utils.decode_range(sheet["!ref"]);
+  for (let r = range.s.r; r <= range.e.r; r++) {
+    const cell = sheet[utils.encode_cell({ r, c: 2 })];
+    if (cell && typeof cell.v === "number") cell.z = "#,##0";
+  }
+  return sheet;
+}
+function buildCashFlow(companyName, period, data) {
+  const rows = [
+    [companyName, null, null],
+    ["LAPORAN ARUS KAS", null, null],
+    [`Periode: ${period}`, null, null],
+    ["(Metode Tidak Langsung — Dalam Rupiah)", null, null],
+    [null, null, null],
+    ["Uraian", null, "Jumlah (Rp)"],
+    [null, null, null],
+    ["I. ARUS KAS DARI AKTIVITAS OPERASI", null, null]
+  ];
+  data.operating.forEach((o) => rows.push([`   ${o.name}`, null, o.amount]));
+  rows.push(["Kas Bersih dari Aktivitas Operasi", null, data.totalOperating]);
+  rows.push([null, null, null]);
+  rows.push(["II. ARUS KAS DARI AKTIVITAS INVESTASI", null, null]);
+  data.investing.forEach((i) => rows.push([`   ${i.name}`, null, i.amount]));
+  rows.push(["Kas Bersih dari Aktivitas Investasi", null, data.totalInvesting]);
+  rows.push([null, null, null]);
+  rows.push(["III. ARUS KAS DARI AKTIVITAS PENDANAAN", null, null]);
+  data.financing.forEach((f) => rows.push([`   ${f.name}`, null, f.amount]));
+  rows.push(["Kas Bersih dari Aktivitas Pendanaan", null, data.totalFinancing]);
+  rows.push([null, null, null]);
+  rows.push(["KENAIKAN (PENURUNAN) KAS BERSIH", null, data.netChange]);
+  rows.push(["Saldo Kas Awal Periode", null, data.openingBalance]);
+  rows.push(["SALDO KAS AKHIR PERIODE", null, data.closingBalance]);
+  const sheet = ws(rows, [52, 12, 22]);
+  for (let r = 0; r <= 3; r++) mergeRow(sheet, r, 0, 2);
+  const range = utils.decode_range(sheet["!ref"]);
+  for (let r = range.s.r; r <= range.e.r; r++) {
+    const cell = sheet[utils.encode_cell({ r, c: 2 })];
+    if (cell && typeof cell.v === "number") cell.z = "#,##0";
+  }
+  return sheet;
+}
+function buildTrialBalance(companyName, period, rows_data) {
+  const totalDebit = rows_data.reduce((s, r) => s + r.debit, 0);
+  const totalCredit = rows_data.reduce((s, r) => s + r.credit, 0);
+  const rows = [
+    [companyName, null, null, null],
+    ["NERACA SALDO (TRIAL BALANCE)", null, null, null],
+    [`Periode: ${period}`, null, null, null],
+    ["(Dalam Rupiah)", null, null, null],
+    [null, null, null, null],
+    ["Kode Akun", "Nama Akun", "Debit (Rp)", "Kredit (Rp)"],
+    ...rows_data.map((r) => [r.code, r.name, r.debit || null, r.credit || null]),
+    [null, null, null, null],
+    ["", "TOTAL", totalDebit, totalCredit]
+  ];
+  const sheet = ws(rows, [14, 40, 20, 20]);
+  for (let r = 0; r <= 3; r++) mergeRow(sheet, r, 0, 3);
+  const range = utils.decode_range(sheet["!ref"]);
+  for (let r = range.s.r; r <= range.e.r; r++) {
+    for (const c of [2, 3]) {
+      const cell = sheet[utils.encode_cell({ r, c })];
+      if (cell && typeof cell.v === "number") cell.z = "#,##0";
+    }
+  }
+  return sheet;
+}
+function buildAging(companyName, period, data) {
+  const rows = [
+    [companyName, null, null, null, null, null, null, null, null],
+    ["LAPORAN AGING PIUTANG USAHA", null, null, null, null, null, null, null, null],
+    [`Per Tanggal: ${period}`, null, null, null, null, null, null, null, null],
+    ["(Dalam Rupiah)", null, null, null, null, null, null, null, null],
+    [null, null, null, null, null, null, null, null, null],
+    ["Pelanggan", "No. Invoice", "Tgl Invoice", "Jatuh Tempo", "Hari Jatuh Tempo", "Belum Jatuh Tempo", "1-30 Hari", "31-60 Hari", "61-90 Hari", "> 90 Hari"],
+    ...data.receivables.map((r) => [
+      r.customer,
+      r.invoice,
+      r.date,
+      r.due,
+      r.daysOverdue > 0 ? r.daysOverdue : 0,
+      r.current || null,
+      r.d1_30 || null,
+      r.d31_60 || null,
+      r.d61_90 || null,
+      r.d90plus || null
+    ]),
+    [null, null, null, null, null, null, null, null, null, null],
+    ["TOTAL", null, null, null, null, data.totalCurrent, data.totalD1_30, data.totalD31_60, data.totalD61_90, data.totalD90Plus],
+    ["Grand Total Piutang", null, null, null, null, null, null, null, null, data.grandTotal]
+  ];
+  const sheet = ws(rows, [28, 18, 14, 14, 16, 22, 16, 16, 16, 16]);
+  for (let r = 0; r <= 3; r++) mergeRow(sheet, r, 0, 9);
+  const range = utils.decode_range(sheet["!ref"]);
+  for (let r = range.s.r; r <= range.e.r; r++) {
+    for (const c of [5, 6, 7, 8, 9]) {
+      const cell = sheet[utils.encode_cell({ r, c })];
+      if (cell && typeof cell.v === "number") cell.z = "#,##0";
+    }
+  }
+  return sheet;
+}
+function buildEquityChanges(companyName, period, data) {
+  const rows = [
+    [companyName, null, null],
+    ["LAPORAN PERUBAHAN EKUITAS (MODAL)", null, null],
+    [`Periode: ${period}`, null, null],
+    ["(Dalam Rupiah)", null, null],
+    [null, null, null],
+    ["Uraian", null, "Jumlah (Rp)"],
+    [null, null, null],
+    ["Saldo Laba Ditahan Awal Periode", null, data.openingRetained],
+    [null, null, null],
+    ["Laba (Rugi) Bersih Periode Berjalan", null, data.netIncome],
+    [null, null, null],
+    ["Dividen yang Diumumkan", null, -0],
+    [null, null, null],
+    ["Saldo Laba Ditahan Akhir Periode", null, data.closingRetained],
+    [null, null, null],
+    ["Modal Disetor", null, data.totalEquity - data.closingRetained],
+    [null, null, null],
+    ["TOTAL EKUITAS", null, data.totalEquity]
+  ];
+  const sheet = ws(rows, [48, 12, 22]);
+  for (let r = 0; r <= 3; r++) mergeRow(sheet, r, 0, 2);
+  const range = utils.decode_range(sheet["!ref"]);
+  for (let r = range.s.r; r <= range.e.r; r++) {
+    const cell = sheet[utils.encode_cell({ r, c: 2 })];
+    if (cell && typeof cell.v === "number") cell.z = "#,##0";
+  }
+  return sheet;
+}
+const MOCK_PL = {
+  income: [
+    { code: "4-1000", name: "Pendapatan Jasa", amount: 25e6 },
+    { code: "4-2000", name: "Pendapatan Lain-lain", amount: 15e5 }
+  ],
+  totalIncome: 265e5,
+  expenses: [
+    { code: "5-1000", name: "Harga Pokok Penjualan", amount: 212500 },
+    { code: "5-2000", name: "Beban Gaji", amount: 32e6 },
+    { code: "5-3000", name: "Beban Sewa", amount: 45e5 },
+    { code: "5-4000", name: "Beban Listrik & Air", amount: 1e6 },
+    { code: "5-5000", name: "Beban Penyusutan", amount: 212500 },
+    { code: "5-6000", name: "Beban Lain-lain", amount: 575e3 }
+  ],
+  totalExpenses: 385e5,
+  netIncome: -12e6
+};
+const MOCK_BS = {
+  currentAssets: [
+    { code: "1-1001", name: "Kas", amount: 15e6 },
+    { code: "1-1002", name: "Bank BCA", amount: 625e5 },
+    { code: "1-1100", name: "Piutang Usaha", amount: 225e5 },
+    { code: "1-1200", name: "Persediaan Barang", amount: 8e6 },
+    { code: "1-1300", name: "Uang Muka & Biaya Dibayar Dimuka", amount: 2e6 }
+  ],
+  totalCurrentAssets: 11e7,
+  nonCurrentAssets: [
+    { code: "1-2000", name: "Peralatan Kantor", amount: 335e5 },
+    { code: "1-2100", name: "Akumulasi Penyusutan Peralatan", amount: -5212500 },
+    { code: "1-2200", name: "Aset Tidak Berwujud", amount: 5e6 }
+  ],
+  totalNonCurrentAssets: 33287500,
+  totalAssets: 143287500,
+  currentLiabilities: [
+    { code: "2-1000", name: "Utang Usaha", amount: 16e6 },
+    { code: "2-1100", name: "Utang Gaji", amount: 0 },
+    { code: "2-1200", name: "Pendapatan Diterima Dimuka", amount: 3e6 }
+  ],
+  totalCurrentLiabilities: 19e6,
+  nonCurrentLiabilities: [
+    { code: "2-2000", name: "Utang Bank Jangka Panjang", amount: 2e7 }
+  ],
+  totalNonCurrentLiabilities: 2e7,
+  totalLiabilities: 39e6,
+  equity: [
+    { code: "3-1000", name: "Modal Pemilik", amount: 116287500 },
+    { name: "Laba (Rugi) Tahun Berjalan", amount: -12e6 }
+  ],
+  totalEquity: 104287500,
+  totalLiabilitiesEquity: 143287500
+};
+const MOCK_CF = {
+  operating: [
+    { name: "Penerimaan dari pelanggan", amount: 15e6 },
+    { name: "Pembayaran kepada karyawan", amount: -32e6 },
+    { name: "Pembayaran beban sewa", amount: -45e5 },
+    { name: "Pembayaran beban listrik & air", amount: -1e6 },
+    { name: "Penerimaan bunga bank", amount: 25e4 }
+  ],
+  totalOperating: -2225e4,
+  investing: [
+    { name: "Pembelian peralatan kantor", amount: -85e5 }
+  ],
+  totalInvesting: -85e5,
+  financing: [
+    { name: "Penerimaan modal dari pemilik", amount: 0 }
+  ],
+  totalFinancing: 0,
+  netChange: -3075e4,
+  openingBalance: 1e8,
+  closingBalance: 6925e4
+};
+const MOCK_TB = [
+  { code: "1-1001", name: "Kas", debit: 15e6, credit: 0 },
+  { code: "1-1002", name: "Bank BCA", debit: 625e5, credit: 0 },
+  { code: "1-1100", name: "Piutang Usaha", debit: 225e5, credit: 0 },
+  { code: "1-1200", name: "Persediaan Barang", debit: 8e6, credit: 0 },
+  { code: "1-2000", name: "Peralatan Kantor", debit: 335e5, credit: 0 },
+  { code: "1-2100", name: "Akumulasi Penyusutan", debit: 0, credit: 5212500 },
+  { code: "2-1000", name: "Utang Usaha", debit: 0, credit: 16e6 },
+  { code: "2-2000", name: "Utang Bank Jangka Panjang", debit: 0, credit: 2e7 },
+  { code: "3-1000", name: "Modal Pemilik", debit: 0, credit: 116287500 },
+  { code: "4-1000", name: "Pendapatan Jasa", debit: 0, credit: 25e6 },
+  { code: "5-2000", name: "Beban Gaji", debit: 32e6, credit: 0 },
+  { code: "5-3000", name: "Beban Sewa", debit: 45e5, credit: 0 }
+];
+const MOCK_AGING_DATA = {
+  receivables: [
+    { customer: "PT Berkah Jaya", invoice: "INV-2025-001", date: "2025-01-15", due: "2025-02-14", amount: 25e6, daysOverdue: 0, current: 25e6, d1_30: 0, d31_60: 0, d61_90: 0, d90plus: 0 },
+    { customer: "CV Sukses Mandiri", invoice: "INV-2024-098", date: "2024-11-20", due: "2024-12-20", amount: 85e5, daysOverdue: 42, current: 0, d1_30: 0, d31_60: 85e5, d61_90: 0, d90plus: 0 },
+    { customer: "PT Karya Utama", invoice: "INV-2024-087", date: "2024-10-05", due: "2024-11-04", amount: 12e6, daysOverdue: 87, current: 0, d1_30: 0, d31_60: 0, d61_90: 12e6, d90plus: 0 },
+    { customer: "UD Makmur Sejahtera", invoice: "INV-2024-071", date: "2024-09-01", due: "2024-10-01", amount: 575e4, daysOverdue: 121, current: 0, d1_30: 0, d31_60: 0, d61_90: 0, d90plus: 575e4 }
+  ],
+  totalCurrent: 25e6,
+  totalD1_30: 0,
+  totalD31_60: 85e5,
+  totalD61_90: 12e6,
+  totalD90Plus: 575e4,
+  grandTotal: 5125e4
+};
 function registerReportHandlers() {
   const db = () => getDb();
   ipcMain.handle("reports:history-list", (_e, companyId) => {
@@ -20601,6 +20987,72 @@ function registerReportHandlers() {
       GROUP BY a.id
       ORDER BY a.code
     `).all(companyId, from, to);
+  });
+  ipcMain.handle("reports:export", async (_e, companyId, reportType, periodLabel) => {
+    const company = db().prepare("SELECT name FROM companies WHERE id = ?").get(companyId);
+    const companyName = (company == null ? void 0 : company.name) ?? "Perusahaan";
+    const wb = utils.book_new();
+    switch (reportType) {
+      case "PROFIT_LOSS": {
+        utils.book_append_sheet(wb, buildProfitLoss(companyName, periodLabel, MOCK_PL), "Laba Rugi");
+        utils.book_append_sheet(wb, buildCalk(companyName, "Laporan Laba Rugi", periodLabel), "CaLK");
+        break;
+      }
+      case "BALANCE_SHEET": {
+        utils.book_append_sheet(wb, buildBalanceSheet(companyName, periodLabel, MOCK_BS), "Neraca");
+        utils.book_append_sheet(wb, buildCalk(companyName, "Laporan Neraca", periodLabel), "CaLK");
+        break;
+      }
+      case "CASH_FLOW": {
+        utils.book_append_sheet(wb, buildCashFlow(companyName, periodLabel, MOCK_CF), "Arus Kas");
+        utils.book_append_sheet(wb, buildCalk(companyName, "Laporan Arus Kas", periodLabel), "CaLK");
+        break;
+      }
+      case "TRIAL_BALANCE": {
+        utils.book_append_sheet(wb, buildTrialBalance(companyName, periodLabel, MOCK_TB), "Neraca Saldo");
+        break;
+      }
+      case "AGING": {
+        utils.book_append_sheet(wb, buildAging(companyName, periodLabel, MOCK_AGING_DATA), "Aging Piutang");
+        break;
+      }
+      case "LEDGER": {
+        utils.book_append_sheet(wb, buildTrialBalance(companyName, periodLabel, MOCK_TB), "Ringkasan Akun");
+        utils.book_append_sheet(wb, buildCalk(companyName, "Buku Besar", periodLabel), "CaLK");
+        break;
+      }
+      default: {
+        utils.book_append_sheet(wb, buildTrialBalance(companyName, periodLabel, MOCK_TB), "Laporan");
+        break;
+      }
+    }
+    if (reportType === "PROFIT_LOSS" || reportType === "BALANCE_SHEET") {
+      utils.book_append_sheet(wb, buildEquityChanges(companyName, periodLabel, {
+        openingRetained: 128287500,
+        netIncome: MOCK_PL.netIncome,
+        closingRetained: 116287500,
+        totalEquity: MOCK_BS.totalEquity
+      }), "Perubahan Modal");
+    }
+    const typeLabels = {
+      PROFIT_LOSS: "LabaRugi",
+      BALANCE_SHEET: "Neraca",
+      CASH_FLOW: "ArusKas",
+      TRIAL_BALANCE: "NercSaldo",
+      AGING: "Aging",
+      LEDGER: "BukuBesar"
+    };
+    const slug = periodLabel.replace(/\s+/g, "_").replace(/[^a-zA-Z0-9_]/g, "");
+    const defaultName = `${typeLabels[reportType] ?? reportType}_${slug}.xlsx`;
+    const { filePath, canceled } = await dialog.showSaveDialog({
+      title: "Simpan Laporan",
+      defaultPath: defaultName,
+      filters: [{ name: "Excel", extensions: ["xlsx"] }]
+    });
+    if (canceled || !filePath) return { ok: false };
+    const buf = writeSync(wb, { type: "buffer", bookType: "xlsx" });
+    fs.writeFileSync(filePath, buf);
+    return { ok: true, filePath };
   });
 }
 const __dirname$1 = path.dirname(fileURLToPath(import.meta.url));

@@ -3,6 +3,8 @@ import { Upload, FileSpreadsheet, X, ChevronRight, CheckCircle2, AlertCircle } f
 import * as XLSX from 'xlsx'
 import { ColumnMapper } from './ColumnMapper'
 import { ImportPreview } from './ImportPreview'
+import { detectMapping, extractRows } from './heuristics'
+import type { DetectionResult } from './heuristics'
 
 export type ImportMode = 'journal' | 'accounts'
 
@@ -28,13 +30,13 @@ const STEP_LABELS: { key: Step; label: string }[] = [
 ]
 
 export function Import() {
-  const [step, setStep]             = useState<Step>('upload')
-  const [mode, setMode]             = useState<ImportMode>('journal')
-  const [fileName, setFileName]     = useState('')
-  const [headers, setHeaders]       = useState<string[]>([])
-  const [rawRows, setRawRows]       = useState<RawRow[]>([])
-  const [mappedRows, setMappedRows] = useState<MappedRow[]>([])
-  const [dragOver, setDragOver]     = useState(false)
+  const [step, setStep]               = useState<Step>('upload')
+  const [mode, setMode]               = useState<ImportMode>('journal')
+  const [fileName, setFileName]       = useState('')
+  const [detection, setDetection]     = useState<DetectionResult | null>(null)
+  const [rawRows, setRawRows]         = useState<RawRow[]>([])
+  const [mappedRows, setMappedRows]   = useState<MappedRow[]>([])
+  const [dragOver, setDragOver]       = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
   const processFile = useCallback((file: File) => {
@@ -44,10 +46,15 @@ export function Import() {
       const data = new Uint8Array(e.target?.result as ArrayBuffer)
       const wb   = XLSX.read(data, { type: 'array' })
       const ws   = wb.Sheets[wb.SheetNames[0]]
-      const json = XLSX.utils.sheet_to_json<RawRow>(ws, { defval: null })
-      if (json.length === 0) return
-      setHeaders(Object.keys(json[0]))
-      setRawRows(json)
+
+      const result = detectMapping(ws)
+      if (result.headers.length === 0) return
+
+      const rows = extractRows(ws, result.dataStartRow, result.headers) as RawRow[]
+      if (rows.length === 0) return
+
+      setDetection(result)
+      setRawRows(rows)
       setStep('map')
     }
     reader.readAsArrayBuffer(file)
@@ -70,7 +77,7 @@ export function Import() {
   function reset() {
     setStep('upload')
     setFileName('')
-    setHeaders([])
+    setDetection(null)
     setRawRows([])
     setMappedRows([])
     if (inputRef.current) inputRef.current.value = ''
@@ -177,7 +184,7 @@ export function Import() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 16px', borderBottom: '1px solid var(--border)', background: 'var(--page-bg)' }}>
             <FileSpreadsheet size={15} color="var(--income)" />
             <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', flex: 1 }}>{fileName}</span>
-            <span style={{ fontSize: 12, color: 'var(--text-hint)' }}>{rawRows.length} baris data</span>
+            <span style={{ fontSize: 12, color: 'var(--text-hint)' }}>{rawRows.length} baris data · header baris {(detection?.dataStartRow ?? 1)}</span>
             <button
               type="button"
               onClick={reset}
@@ -187,11 +194,13 @@ export function Import() {
             </button>
           </div>
 
-          {step === 'map' && (
+          {step === 'map' && detection && (
             <ColumnMapper
               mode={mode}
-              headers={headers}
+              headers={detection.headers}
               rawRows={rawRows}
+              mapping={detection.mapping}
+              confidence={detection.confidence}
               onConfirm={(rows) => { setMappedRows(rows); setStep('preview') }}
             />
           )}

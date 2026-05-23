@@ -8,8 +8,8 @@ _Nothing currently in progress._
 ## Backlog
 
 ### Import / Upload Reports
-- [ ] **Heuristic header detection** — scan first ~10 rows for Indonesian accounting keywords to auto-detect columns (Debit, Kredit, Saldo, Uraian, Kode Akun, etc.)
-- [ ] **Column mapping UI** — when headers can't be auto-matched, show a preview table and let user assign columns to expected fields
+- [x] **Heuristic header detection** — scan first ~10 rows for Indonesian accounting keywords to auto-detect columns (Debit, Kredit, Saldo, Uraian, Kode Akun, etc.)
+- [x] **Column mapping UI** — two-panel click-to-assign UI: source column chips (left) + target field slots (right), live mapped preview
 - [ ] **Mapping profiles** — save column mappings keyed by structural fingerprint (headers hash + sheet name + first-data-row); auto-apply on next upload of same template
 - [ ] **Staging / diff preview** — parsed rows go into draft table first; show green=new, yellow=changed, gray=duplicate before committing
 - [ ] **Smart deduplication** — match incoming rows by natural key (date + account code + amount + description) before insert; skip exact duplicates, flag near-duplicates
